@@ -1,0 +1,61 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hatch-agent"
+version = "0.0.1"
+description = "A small scaffold for a Hatch plugin that provides an intelligent agent."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+keywords = ["hatch", "plugin", "agent", "llm", "automation"]
+authors = [
+  { name = "Cary Hawkins", email = "hawkinscary23@gmail.com" },
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Natural Language :: English",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: Implementation :: CPython",
+]
+
+dependencies = [
+  "requests>=2.25.1",
+  "pydantic>=1.8.2",
+  "tomli>=2.0.1; python_version < '3.11'",
+  "tomli-w>=0.5.0",
+  "strands-agents"
+]
+
+[project.urls]
+Homepage = "https://example.org/hatch-agent"
+Source = "https://github.com/your-org/hatch-agent"
+Tracker = "https://github.com/your-org/hatch-agent/issues"
+
+[project.scripts]
+"hatch-agent-chat" = "hatch_agent.commands.chat:main"
+"hatch-agent-generate-config" = "hatch_agent.commands.config:generate_config"
+
+[project.optional-dependencies]
+native = ["strands"]
+dev = ["pytest>=7.0.0", "pytest-cov>=3.0.0"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/hatch_agent"]
+
+[tool.hatch.envs.default]
+python = "3.10"
+
+[tool.hatch.envs.dev]
+template = "default"
+features = ["dev"]
+description = "Developer environment: installs dev extras (pytest, etc.)"
+
+
