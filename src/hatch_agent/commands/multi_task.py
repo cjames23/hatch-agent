@@ -1,80 +1,96 @@
-"""Multi-agent task execution command that uses the multi-agent orchestrator."""
+"""Multi-agent task execution command using Click."""
 
-from typing import Optional
-from ..agent import Agent
-from ..config import load_config
+import click
+from pathlib import Path
+
+from hatch_agent.agent.core import Agent
+from hatch_agent.config import load_config
 
 
-def run_multi_task(description: str, name: Optional[str] = None, config_path: Optional[str] = None) -> int:
-    """Run a task using the multi-agent orchestrator.
+@click.command()
+@click.argument('task', nargs=-1, required=True)
+@click.option(
+    '--config',
+    type=click.Path(exists=True, file_okay=True, dir_okay=False, path_type=Path),
+    default=None,
+    help='Path to agent configuration file'
+)
+@click.option(
+    '--show-all',
+    is_flag=True,
+    help='Show all agent suggestions, not just the selected one'
+)
+def multi_task(task: tuple, config: Path, show_all: bool):
+    """Run a task using multi-agent orchestration.
 
     This command uses a multi-agent approach with:
     - 2 specialist agents that generate different suggestions
     - 1 judge agent that evaluates and selects the best suggestion
 
-    The Agent will use the provider configuration from the config file,
-    but route it through the multi-agent orchestrator.
+    Examples:
 
-    Returns an exit code (0 success, non-zero failure).
+      hatch-agent multi-task How do I set up testing with pytest?
+
+      hatch-agent multi-task Configure my project for type checking
     """
-    cfg = load_config(config_path)
+    # Join task words
+    task_description = " ".join(task)
 
-    # Get provider configuration
-    provider = cfg.get("provider", "mock")
-    provider_cfg = cfg.get("providers", {}).get(provider, {})
+    click.echo(f"🤖 Task: {click.style(task_description, fg='cyan')}")
+    click.echo()
+
+    # Load agent configuration
+    cfg = load_config(config)
+    provider = cfg.get("underlying_provider", "openai")
+    provider_cfg = cfg.get("underlying_config", {})
+
+    # Ensure model is set
+    if cfg.get("model") and "model" not in provider_cfg:
+        provider_cfg = dict(provider_cfg)
+        provider_cfg["model"] = cfg.get("model")
+
+    click.echo("🤖 Consulting AI agents...")
+    click.echo()
 
     # Create agent with multi-agent orchestration enabled
     agent = Agent(
-        name=name or "hatch-multi-agent",
+        name="hatch-multi-agent",
         use_multi_agent=True,
         provider_name=provider,
         provider_config=provider_cfg
     )
 
-    result = agent.run_task(description)
+    result = agent.run_task(task_description)
 
-    if result.get("success"):
-        # Format the multi-agent output nicely
-        print("=" * 60)
-        print("SELECTED SUGGESTION")
-        print("=" * 60)
-        print(result.get("selected_suggestion", result.get("output", "")))
-        print()
-        print(f"Selected Agent: {result.get('selected_agent', 'N/A')}")
-        print(f"Reasoning: {result.get('reasoning', 'N/A')}")
+    if not result.get("success"):
+        click.echo(click.style("❌ Task failed:", fg="red"))
+        click.echo(result.get("output", "Unknown error"))
+        raise click.Abort()
 
-        # Show all suggestions if available
-        if "all_suggestions" in result:
-            print("\n" + "=" * 60)
-            print("ALL AGENT SUGGESTIONS")
-            print("=" * 60)
-            for i, suggestion in enumerate(result["all_suggestions"], 1):
-                print(f"\n{i}. {suggestion['agent']} (confidence: {suggestion['confidence']:.2f})")
-                print(f"   Suggestion: {suggestion['suggestion']}")
-                print(f"   Reasoning: {suggestion['reasoning']}")
+    # Format the multi-agent output
+    click.echo(click.style("=" * 70, fg="cyan"))
+    click.echo(click.style("SELECTED SUGGESTION", fg="cyan", bold=True))
+    click.echo(click.style("=" * 70, fg="cyan"))
+    click.echo()
+    click.echo(result.get("selected_suggestion", result.get("output", "")))
+    click.echo()
+    click.echo(click.style(f"Selected Agent: {result.get('selected_agent', 'N/A')}", fg="blue"))
+    click.echo(click.style(f"Reasoning: {result.get('reasoning', 'N/A')}", fg="blue"))
 
-        return 0
-    else:
-        print("Task failed:", result.get("output", "Unknown error"))
-        return 1
+    # Show all suggestions if requested
+    if show_all and "all_suggestions" in result:
+        click.echo()
+        click.echo(click.style("=" * 70, fg="yellow"))
+        click.echo(click.style("ALL AGENT SUGGESTIONS", fg="yellow", bold=True))
+        click.echo(click.style("=" * 70, fg="yellow"))
 
-
-def main():
-    """CLI entry point for multi-agent task execution."""
-    import sys
-    import argparse
-
-    parser = argparse.ArgumentParser(description="Run a task using multi-agent orchestration")
-    parser.add_argument("task", help="Task description")
-    parser.add_argument("--name", help="Agent name", default=None)
-    parser.add_argument("--config", help="Path to config file", default=None)
-
-    args = parser.parse_args()
-
-    exit_code = run_multi_task(args.task, args.name, args.config)
-    sys.exit(exit_code)
+        for i, suggestion in enumerate(result["all_suggestions"], 1):
+            click.echo()
+            click.echo(click.style(f"{i}. {suggestion['agent']}", fg="yellow", bold=True))
+            click.echo(click.style(f"   Confidence: {suggestion['confidence']:.2f}", fg="yellow"))
+            click.echo(f"   Suggestion: {suggestion['suggestion']}")
+            click.echo(f"   Reasoning: {suggestion['reasoning']}")
 
 
 if __name__ == "__main__":
-    main()
-
+    multi_task()

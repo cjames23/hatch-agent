@@ -8,13 +8,10 @@ The multi-agent approach uses:
 - 2 specialist agents that generate different suggestions
 - 1 judge agent that evaluates and selects the best suggestion
 """
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from dataclasses import dataclass
-import json
 
-
-class ProviderError(RuntimeError):
-    pass
+from strands_agents import Agent as StrandsAgent, AgentConfig
 
 
 class StrandsProvider:
@@ -32,16 +29,6 @@ class StrandsProvider:
 
     def __init__(self, config: Dict[str, Any]) -> None:
         self.config = config
-
-    def _ensure_strands(self):
-        try:
-            from strands_agents import Agent, AgentConfig
-            return Agent, AgentConfig
-        except ImportError as exc:
-            raise ProviderError(
-                "Install 'strands-agents' package to use this provider "
-                "(pip install strands-agents)"
-            ) from exc
 
     def complete(self, prompt: str) -> str:
         """Complete a prompt using strands-agents."""
@@ -74,8 +61,6 @@ class StrandsProvider:
             return output
         else:
             # Single agent mode - use strands-agents directly
-            Agent, AgentConfig = self._ensure_strands()
-
             underlying_provider = self.config.get("underlying_provider", "openai")
             underlying_config = self.config.get("underlying_config", {})
 
@@ -92,7 +77,7 @@ class StrandsProvider:
                 provider_config=underlying_config
             )
 
-            agent = Agent(config)
+            agent = StrandsAgent(config)
             return agent.run(prompt)
 
     def chat(self, message: str) -> str:

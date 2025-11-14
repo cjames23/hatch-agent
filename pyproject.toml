@@ -16,6 +16,7 @@ authors = [
 ]
 classifiers = [
   "Development Status :: 3 - Alpha",
+  "Framework :: Hatch",
   "Intended Audience :: Developers",
   "Natural Language :: English",
   "Operating System :: OS Independent",
@@ -31,7 +32,9 @@ dependencies = [
   "pydantic>=1.8.2",
   "tomli>=2.0.1; python_version < '3.11'",
   "tomli-w>=0.5.0",
-  "strands-agents"
+  "strands-agents",
+  "click>=8.0.0",
+  "hatch"
 ]
 
 [project.urls]
@@ -40,9 +43,12 @@ Source = "https://github.com/your-org/hatch-agent"
 Tracker = "https://github.com/your-org/hatch-agent/issues"
 
 [project.scripts]
-"hatch-agent-chat" = "hatch_agent.commands.chat:main"
-"hatch-agent-generate-config" = "hatch_agent.commands.config:generate_config"
-"hatch-agent-multi-task" = "hatch_agent.commands.multi_task:main"
+"hatch-agent" = "hatch_agent.commands.multi_task:multi_task"
+"hatch-agent-explain" = "hatch_agent.commands.explain:explain"
+"hatch-agent-add-dep" = "hatch_agent.commands.add_dependency:add_dep"
+
+[project.entry-points.hatch]
+agent = "hatch_agent.hooks"
 
 [project.optional-dependencies]
 native = ["strands"]

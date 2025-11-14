@@ -9,6 +9,8 @@ from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 import json
 
+from strands_agents import Agent as StrandsAgent, AgentConfig
+
 
 @dataclass
 class AgentResponse:
@@ -27,42 +29,26 @@ class MultiAgentOrchestrator:
     2. A judge agent evaluates all suggestions and picks the best one
     """
 
-    def __init__(self, provider_name: str = "mock", provider_config: Optional[Dict[str, Any]] = None):
+    def __init__(self, provider_name: str = "openai", provider_config: Optional[Dict[str, Any]] = None):
         """Initialize the multi-agent orchestrator.
 
         Args:
-            provider_name: The LLM provider to use (openai, azure, aws, etc.)
+            provider_name: The LLM provider to use (openai, anthropic, bedrock, etc.)
             provider_config: Configuration for the LLM provider
         """
         self.provider_name = provider_name
         self.provider_config = provider_config or {}
 
-        # Initialize agents using strands-agents
-        try:
-            from strands_agents import Agent as StrandsAgent, AgentConfig
-            self._strands_available = True
-            self.StrandsAgent = StrandsAgent
-            self.AgentConfig = AgentConfig
-        except ImportError:
-            self._strands_available = False
-            # Fallback to mock implementation
-            self.StrandsAgent = None
-            self.AgentConfig = None
-
-    def _create_agent(self, name: str, role: str, instructions: str) -> Any:
+    def _create_agent(self, name: str, role: str, instructions: str) -> StrandsAgent:
         """Create an agent with the given configuration."""
-        if self._strands_available and self.StrandsAgent:
-            config = self.AgentConfig(
-                name=name,
-                role=role,
-                instructions=instructions,
-                provider=self.provider_name,
-                provider_config=self.provider_config
-            )
-            return self.StrandsAgent(config)
-        else:
-            # Mock agent for testing
-            return MockAgent(name, role, instructions)
+        config = AgentConfig(
+            name=name,
+            role=role,
+            instructions=instructions,
+            provider=self.provider_name,
+            provider_config=self.provider_config
+        )
+        return StrandsAgent(config)
 
     def run(self, task: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Run the multi-agent system to solve a task.
@@ -76,35 +62,23 @@ class MultiAgentOrchestrator:
         """
         context = context or {}
 
-        # Create specialist agents
+        # Create specialist agents with detailed instructions
         agent1 = self._create_agent(
             name="ConfigurationSpecialist",
             role="Hatch project configuration expert",
-            instructions=(
-                "You are an expert in Hatch project configuration and dependency management. "
-                "Focus on pyproject.toml structure, build systems, and environment setup. "
-                "Provide detailed, configuration-focused solutions."
-            )
+            instructions=self._get_configuration_specialist_prompt()
         )
 
         agent2 = self._create_agent(
             name="WorkflowSpecialist",
             role="Hatch workflow and automation expert",
-            instructions=(
-                "You are an expert in Hatch workflows, scripts, and automation. "
-                "Focus on task automation, testing, and development workflows. "
-                "Provide practical, workflow-oriented solutions."
-            )
+            instructions=self._get_workflow_specialist_prompt()
         )
 
         judge_agent = self._create_agent(
             name="Judge",
             role="Solution evaluator and selector",
-            instructions=(
-                "You are a judge that evaluates multiple solutions to select the best one. "
-                "Consider accuracy, practicality, completeness, and appropriateness for the context. "
-                "Provide clear reasoning for your selection."
-            )
+            instructions=self._get_judge_prompt()
         )
 
         # Get suggestions from both specialist agents
@@ -137,43 +111,113 @@ class MultiAgentOrchestrator:
             ]
         }
 
-    def _get_agent_response(self, agent: Any, task: str, context: Dict[str, Any]) -> AgentResponse:
+    def _get_configuration_specialist_prompt(self) -> str:
+        """Get the detailed prompt for the configuration specialist."""
+        return """You are an expert in Hatch project configuration and dependency management.
+
+Your expertise includes:
+- pyproject.toml structure and PEP 621 compliance
+- Build system configuration
+- Dependency specification and version constraints
+- Environment setup and management
+- Hatch-specific configuration options
+
+When providing solutions:
+1. Focus on configuration accuracy and best practices
+2. Ensure all TOML syntax is valid
+3. Consider dependency compatibility
+4. Follow semantic versioning guidelines
+5. Explain the impact of changes on the project
+
+Provide detailed, configuration-focused solutions that are immediately actionable."""
+
+    def _get_workflow_specialist_prompt(self) -> str:
+        """Get the detailed prompt for the workflow specialist."""
+        return """You are an expert in Hatch workflows, automation, and development best practices.
+
+Your expertise includes:
+- Testing frameworks and test execution
+- Code formatting and linting tools
+- Type checking configuration
+- CI/CD pipeline setup
+- Development environment workflows
+- Hatch scripts and automation
+
+When providing solutions:
+1. Focus on practical, workflow-oriented approaches
+2. Consider developer experience and efficiency
+3. Ensure commands are safe and reversible
+4. Provide step-by-step execution plans
+5. Include verification steps
+
+Provide practical, workflow-oriented solutions that improve development processes."""
+
+    def _get_judge_prompt(self) -> str:
+        """Get the detailed prompt for the judge agent with consistency guidelines."""
+        return """You are an impartial judge evaluating technical solutions.
+
+Your role is to select the best solution based on consistent, objective criteria.
+
+EVALUATION FRAMEWORK (use this exact scoring system):
+
+1. CORRECTNESS (0-30 points):
+   - Does the solution solve the stated problem?
+   - Is the technical approach sound?
+   - Are there any errors or oversights?
+
+2. COMPLETENESS (0-25 points):
+   - Does it address all aspects of the problem?
+   - Are edge cases considered?
+   - Is the solution actionable without additional information?
+
+3. SAFETY (0-20 points):
+   - Are there risks of breaking existing functionality?
+   - Is the solution reversible if needed?
+   - Are there proper safeguards?
+
+4. BEST PRACTICES (0-15 points):
+   - Does it follow industry standards?
+   - Is it maintainable?
+   - Does it align with Hatch conventions?
+
+5. CLARITY (0-10 points):
+   - Is the explanation clear?
+   - Are instructions easy to follow?
+   - Is the reasoning transparent?
+
+DECISION PROCESS:
+1. Score each suggestion using the framework above
+2. Calculate total scores (max 100 points each)
+3. Select the highest-scoring solution
+4. If scores are within 5 points, prefer the safer approach
+5. Document your scoring in the reasoning
+
+OUTPUT FORMAT:
+Always provide your response as valid JSON with:
+- selected_agent: name of the winning agent
+- suggestion: the selected (or improved) solution
+- reasoning: detailed explanation including scores
+- total_scores: object with scores for each agent
+
+This framework ensures consistent judgments across similar inputs."""
+
+    def _get_agent_response(self, agent: StrandsAgent, task: str, context: Dict[str, Any]) -> AgentResponse:
         """Get a response from a single agent."""
         prompt = self._build_prompt(task, context)
-
-        if self._strands_available:
-            # Use strands-agents
-            result = agent.run(prompt)
-            return self._parse_agent_response(agent.config.name, result)
-        else:
-            # Mock response
-            response = agent.run(prompt)
-            return AgentResponse(
-                agent_name=agent.name,
-                suggestion=response.get("suggestion", ""),
-                reasoning=response.get("reasoning", ""),
-                confidence=response.get("confidence", 0.5)
-            )
+        result = agent.run(prompt)
+        return self._parse_agent_response(agent.config.name, result)
 
     def _judge_suggestions(
         self,
-        judge: Any,
+        judge: StrandsAgent,
         task: str,
         suggestions: List[AgentResponse],
         context: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Have the judge agent evaluate and select the best suggestion."""
         judge_prompt = self._build_judge_prompt(task, suggestions, context)
-
-        if self._strands_available:
-            result = judge.run(judge_prompt)
-            # Parse judge's decision
-            decision = self._parse_judge_decision(result, suggestions)
-        else:
-            # Mock judge decision
-            result = judge.run(judge_prompt)
-            decision = result
-
+        result = judge.run(judge_prompt)
+        decision = self._parse_judge_decision(result, suggestions)
         return decision
 
     def _build_prompt(self, task: str, context: Dict[str, Any]) -> str:
@@ -184,17 +228,20 @@ class MultiAgentOrchestrator:
 
         return f"""Task: {task}{context_str}
 
-Please provide:
-1. A detailed suggestion/solution
-2. Your reasoning for this approach
-3. A confidence score (0.0 to 1.0)
+INSTRUCTIONS:
+1. Analyze the task carefully
+2. Provide a detailed, actionable solution
+3. Explain your reasoning
+4. Rate your confidence (0.0 to 1.0)
 
-Format your response as JSON:
+RESPONSE FORMAT (JSON):
 {{
-    "suggestion": "your detailed suggestion here",
-    "reasoning": "why this is a good approach",
+    "suggestion": "Your detailed solution with specific steps/changes",
+    "reasoning": "Why this approach is effective and appropriate",
     "confidence": 0.85
-}}"""
+}}
+
+Ensure your response is valid JSON."""
 
     def _build_judge_prompt(
         self,
@@ -204,7 +251,7 @@ Format your response as JSON:
     ) -> str:
         """Build a prompt for the judge agent."""
         suggestions_str = "\n\n".join([
-            f"**Suggestion from {s.agent_name}:**\n"
+            f"=== Suggestion from {s.agent_name} ===\n"
             f"Suggestion: {s.suggestion}\n"
             f"Reasoning: {s.reasoning}\n"
             f"Confidence: {s.confidence}"
@@ -217,16 +264,24 @@ Format your response as JSON:
 
         return f"""Task: {task}{context_str}
 
-Evaluate the following suggestions and select the best one:
+SUGGESTIONS TO EVALUATE:
 
 {suggestions_str}
 
-Provide your decision as JSON:
+Using the evaluation framework in your instructions, analyze each suggestion and select the best one.
+
+RESPONSE FORMAT (JSON):
 {{
     "selected_agent": "name of the agent with best suggestion",
-    "reasoning": "why this suggestion is the best",
-    "suggestion": "the selected suggestion (can be modified/combined)"
-}}"""
+    "reasoning": "detailed scoring and rationale using the framework",
+    "suggestion": "the selected suggestion (you may refine it)",
+    "total_scores": {{
+        "ConfigurationSpecialist": 85,
+        "WorkflowSpecialist": 78
+    }}
+}}
+
+Ensure your response is valid JSON."""
 
     def _parse_agent_response(self, agent_name: str, result: Any) -> AgentResponse:
         """Parse an agent's response into structured format."""
@@ -306,31 +361,5 @@ Provide your decision as JSON:
                 "agent_name": suggestions[0].agent_name,
                 "suggestion": suggestions[0].suggestion,
                 "reasoning": str(result)
-            }
-
-
-class MockAgent:
-    """Mock agent for testing when strands-agents is not available."""
-
-    def __init__(self, name: str, role: str, instructions: str):
-        self.name = name
-        self.role = role
-        self.instructions = instructions
-
-    def run(self, prompt: str) -> Dict[str, Any]:
-        """Generate a mock response."""
-        if "judge" in self.name.lower() or "Judge" in self.name:
-            # Judge response
-            return {
-                "selected_agent": "ConfigurationSpecialist",
-                "suggestion": f"[Mock] Selected suggestion based on {self.role}",
-                "reasoning": f"[Mock] This approach aligns best with {self.role}"
-            }
-        else:
-            # Specialist response
-            return {
-                "suggestion": f"[Mock {self.name}] Suggestion based on {self.role}: {prompt[:100]}...",
-                "reasoning": f"This suggestion leverages my expertise in {self.role}",
-                "confidence": 0.75
             }
 
