@@ -1,20 +1,14 @@
-"""Small LLM client abstraction with provider registry.
+"""LLM client using strands-agents for multi-agent orchestration.
 
-This module provides a tiny, test-friendly abstraction for choosing and
-invoking LLM providers based on configuration. Real providers (OpenAI/AWS)
-can be plugged in later; a `mock` provider is included for local testing.
+This module provides a simplified LLM abstraction that uses strands-agents
+exclusively. The strands-agents library handles integration with various
+LLM providers (OpenAI, Azure, AWS Bedrock, etc.) and foundational models.
 
-Implemented providers:
-- MockProvider: local deterministic response
-- OpenAIProvider: uses the `openai` package
-- AzureOpenAIProvider: uses `openai` but configured for Azure OpenAI
-- AWSProvider: uses `boto3` to call Bedrock or SageMaker runtimes
-- GitHubProvider: lightweight wrapper that uses `requests` (placeholder)
-
-All external SDK imports are performed lazily and raise descriptive
-ProviderError messages if not installed.
+The multi-agent approach uses:
+- 2 specialist agents that generate different suggestions
+- 1 judge agent that evaluates and selects the best suggestion
 """
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from dataclasses import dataclass
 import json
 
@@ -23,229 +17,162 @@ class ProviderError(RuntimeError):
     pass
 
 
-class BaseProvider:
+class StrandsProvider:
+    """Provider using strands-agents for multi-agent orchestration.
+
+    This provider uses a multi-agent approach with 2 specialist agents
+    and 1 judge agent to generate and evaluate suggestions.
+
+    Config keys supported:
+    - underlying_provider: The actual LLM provider to use (openai, anthropic, bedrock, etc.)
+    - underlying_config: Configuration for the underlying provider
+    - mode: 'multi-agent' (default) or 'single' for single agent mode
+    - model: The model to use (e.g., 'gpt-4', 'claude-3', etc.)
+    """
+
     def __init__(self, config: Dict[str, Any]) -> None:
         self.config = config
 
+    def _ensure_strands(self):
+        try:
+            from strands_agents import Agent, AgentConfig
+            return Agent, AgentConfig
+        except ImportError as exc:
+            raise ProviderError(
+                "Install 'strands-agents' package to use this provider "
+                "(pip install strands-agents)"
+            ) from exc
+
     def complete(self, prompt: str) -> str:
-        raise NotImplementedError
+        """Complete a prompt using strands-agents."""
+        mode = self.config.get("mode", "multi-agent")
+
+        if mode == "multi-agent":
+            # Use multi-agent orchestration
+            from hatch_agent.agent.multi_agent import MultiAgentOrchestrator
+
+            underlying_provider = self.config.get("underlying_provider", "openai")
+            underlying_config = self.config.get("underlying_config", {})
+
+            # Pass through model configuration
+            if self.config.get("model") and "model" not in underlying_config:
+                underlying_config = dict(underlying_config)
+                underlying_config["model"] = self.config.get("model")
+
+            orchestrator = MultiAgentOrchestrator(
+                provider_name=underlying_provider,
+                provider_config=underlying_config
+            )
+
+            result = orchestrator.run(task=prompt)
+
+            # Format the response to include both the selected suggestion and reasoning
+            output = f"{result['selected_suggestion']}\n\n"
+            output += f"[Selected from {result['selected_agent']}]\n"
+            output += f"Reasoning: {result['reasoning']}"
+
+            return output
+        else:
+            # Single agent mode - use strands-agents directly
+            Agent, AgentConfig = self._ensure_strands()
+
+            underlying_provider = self.config.get("underlying_provider", "openai")
+            underlying_config = self.config.get("underlying_config", {})
+
+            # Pass through model configuration
+            if self.config.get("model") and "model" not in underlying_config:
+                underlying_config = dict(underlying_config)
+                underlying_config["model"] = self.config.get("model")
+
+            config = AgentConfig(
+                name="HatchAgent",
+                role="Hatch project management assistant",
+                instructions="You are an expert in Hatch project management, configuration, and automation.",
+                provider=underlying_provider,
+                provider_config=underlying_config
+            )
+
+            agent = Agent(config)
+            return agent.run(prompt)
 
     def chat(self, message: str) -> str:
-        # By default, route to complete
+        """Chat interface - routes to complete."""
         return self.complete(message)
-
-
-class MockProvider(BaseProvider):
-    def complete(self, prompt: str) -> str:
-        return f"[mock response] {prompt[:200]}"
-
-
-class OpenAIProvider(BaseProvider):
-    """Provider using the official openai Python package.
-
-    Config keys supported:
-    - api_key: optional (if not set, relies on env OPENAI_API_KEY)
-    - model: model name to use
-    """
-
-    def _ensure_openai(self):
-        try:
-            import openai
-            return openai
-        except Exception as exc:  # pragma: no cover - environment dependent
-            raise ProviderError("Install the 'openai' package to use the OpenAI provider (pip install openai)") from exc
-
-    def complete(self, prompt: str) -> str:
-        openai = self._ensure_openai()
-        cfg_model = self.config.get("model")
-        api_key = self.config.get("api_key")
-        if api_key:
-            openai.api_key = api_key
-        model = cfg_model or self.config.get("model") or "gpt-3.5-turbo"
-        # Try chat completion first (recommended)
-        try:
-            resp = openai.ChatCompletion.create(model=model, messages=[{"role": "user", "content": prompt}])
-            # Response shape: choices[0].message.content
-            return resp.choices[0].message.content
-        except AttributeError:
-            # Fallback to legacy Completion
-            resp = openai.Completion.create(model=model, prompt=prompt, max_tokens=512)
-            return resp.choices[0].text
-
-
-class AzureOpenAIProvider(OpenAIProvider):
-    """Azure OpenAI provider that configures the `openai` package for Azure.
-
-    Config keys:
-    - api_key, api_base, api_type ('azure'), api_version, deployment
-    """
-
-    def complete(self, prompt: str) -> str:
-        openai = self._ensure_openai()
-        api_key = self.config.get("api_key")
-        api_base = self.config.get("api_base")
-        api_type = self.config.get("api_type", "azure")
-        api_version = self.config.get("api_version")
-        deployment = self.config.get("deployment")  # deployment name (model alias)
-
-        if api_key:
-            openai.api_key = api_key
-        if api_base:
-            openai.api_base = api_base
-        if api_type:
-            openai.api_type = api_type
-        if api_version:
-            openai.api_version = api_version
-
-        model = deployment or self.config.get("model")
-        if not model:
-            raise ProviderError("Azure provider requires 'deployment' or 'model' in configuration")
-
-        # Use ChatCompletion for Azure; model argument is deployment name
-        resp = openai.ChatCompletion.create(engine=model, messages=[{"role": "user", "content": prompt}])
-        return resp.choices[0].message.content
-
-
-class AWSProvider(BaseProvider):
-    """AWS provider supporting Bedrock and SageMaker runtime calls.
-
-    Config keys:
-    - client: 'bedrock' (default) or 'sagemaker'
-    - region, access_key, secret_key (optional; can rely on env/instance profile)
-    - model: for bedrock use modelId; for sagemaker use endpoint name
-    """
-
-    def _get_boto3_client(self, service_name: str):
-        try:
-            import boto3
-        except Exception as exc:  # pragma: no cover - environment dependent
-            raise ProviderError("Install 'boto3' to use the AWS provider (pip install boto3)") from exc
-
-        kwargs = {}
-        if self.config.get("region"):
-            kwargs["region_name"] = self.config.get("region")
-        if self.config.get("access_key") and self.config.get("secret_key"):
-            kwargs.update({
-                "aws_access_key_id": self.config.get("access_key"),
-                "aws_secret_access_key": self.config.get("secret_key"),
-            })
-        return boto3.client(service_name, **kwargs)
-
-    def complete(self, prompt: str) -> str:
-        client_type = self.config.get("client", "bedrock")
-        model = self.config.get("model")
-        if client_type == "bedrock":
-            client = self._get_boto3_client("bedrock-runtime")
-            # Bedrock expects a JSON-like input; many runtimes accept a body with "inputText"
-            body = json.dumps({"input": prompt})
-            try:
-                resp = client.invoke_model(modelId=model, contentType="application/json", accept="application/json", body=body)
-                # The response body can be a streaming or binary blob; try to parse
-                if isinstance(resp.get("body"), (bytes, bytearray)):
-                    text = resp.get("body").decode("utf-8")
-                else:
-                    text = resp.get("body")
-                # Try to extract text field from JSON
-                try:
-                    parsed = json.loads(text)
-                    return parsed.get("output", parsed.get("results", text))
-                except Exception:
-                    return str(text)
-            except Exception as exc:
-                raise ProviderError(f"AWS Bedrock invocation failed: {exc}") from exc
-        elif client_type == "sagemaker":
-            client = self._get_boto3_client("sagemaker-runtime")
-            try:
-                resp = client.invoke_endpoint(EndpointName=model, ContentType="text/plain", Body=prompt)
-                body = resp.get("Body")
-                if hasattr(body, "read"):
-                    result = body.read().decode("utf-8")
-                else:
-                    result = str(body)
-                return result
-            except Exception as exc:
-                raise ProviderError(f"SageMaker invocation failed: {exc}") from exc
-        else:
-            raise ProviderError(f"Unknown AWS client type: {client_type}")
-
-
-class GitHubProvider(BaseProvider):
-    """A lightweight GitHub-backed provider wrapper (placeholder).
-
-    This class demonstrates how a GitHub-hosted model/endpoint could be wired
-    but does not implement a real production integration. It requires `requests`.
-    """
-
-    def _ensure_requests(self):
-        try:
-            import requests
-            return requests
-        except Exception as exc:  # pragma: no cover - environment dependent
-            raise ProviderError("Install 'requests' to use the GitHub provider (pip install requests)") from exc
-
-    def complete(self, prompt: str) -> str:
-        requests = self._ensure_requests()
-        token = self.config.get("token")
-        api = self.config.get("api", "https://api.github.com")
-        endpoint = self.config.get("endpoint", "/gists")
-        headers = {"Accept": "application/json"}
-        if token:
-            headers["Authorization"] = f"token {token}"
-        # As a placeholder we POST the prompt to an endpoint if configured
-        url = api.rstrip("/") + "/" + endpoint.lstrip("/")
-        try:
-            resp = requests.post(url, json={"prompt": prompt}, headers=headers, timeout=10)
-            resp.raise_for_status()
-            try:
-                data = resp.json()
-                return str(data)
-            except Exception:
-                return resp.text
-        except Exception as exc:
-            raise ProviderError(f"GitHub provider request failed: {exc}") from exc
-
-
-class ProviderRegistry:
-    _providers = {
-        "mock": MockProvider,
-        "openai": OpenAIProvider,
-        "azure": AzureOpenAIProvider,
-        "aws": AWSProvider,
-        "github": GitHubProvider,
-    }
-
-    @classmethod
-    def get(cls, name: str, config: Dict[str, Any]) -> BaseProvider:
-        pcls = cls._providers.get(name)
-        if not pcls:
-            raise ProviderError(f"Unknown provider: {name}")
-        return pcls(config)
 
 
 @dataclass
 class LLMClient:
-    provider_name: str
-    model: str
+    """LLM client that uses strands-agents for all LLM interactions.
+
+    This client simplifies LLM access by using strands-agents as the sole
+    provider, which in turn supports multiple underlying providers and models.
+    """
     provider_config: Dict[str, Any]
 
     @classmethod
     def from_config(cls, cfg: Dict[str, Any]) -> "LLMClient":
-        provider = cfg.get("provider", "mock")
-        model = cfg.get("model", "gpt-sim-1")
-        provider_cfg = cfg.get("providers", {}).get(provider, {})
-        # Ensure the model is present in provider config for some providers
-        if provider_cfg and "model" not in provider_cfg and model:
-            provider_cfg = dict(provider_cfg)
-            provider_cfg["model"] = model
-        return cls(provider_name=provider, model=model, provider_config=provider_cfg)
+        """Create an LLM client from configuration.
 
-    def _provider(self) -> BaseProvider:
-        return ProviderRegistry.get(self.provider_name, self.provider_config)
+        Expected config structure:
+        {
+            "mode": "multi-agent",  # or "single"
+            "underlying_provider": "openai",  # or "anthropic", "bedrock", etc.
+            "model": "gpt-4",  # or other model name
+            "underlying_config": {
+                # Provider-specific configuration
+                "api_key": "...",
+                # ... other settings
+            }
+        }
+
+        For backwards compatibility, also supports:
+        {
+            "provider": "strands",
+            "model": "gpt-4",
+            "providers": {
+                "strands": {
+                    "underlying_provider": "openai",
+                    "underlying_config": {...}
+                }
+            }
+        }
+        """
+        # Check for new-style config first
+        if "underlying_provider" in cfg or "mode" in cfg:
+            # Direct configuration
+            return cls(provider_config=cfg)
+
+        # Check for old-style config with nested providers
+        provider = cfg.get("provider", "strands")
+        if provider != "strands":
+            # Convert to strands config
+            cfg = {
+                "underlying_provider": provider,
+                "model": cfg.get("model"),
+                "underlying_config": cfg.get("providers", {}).get(provider, {})
+            }
+            return cls(provider_config=cfg)
+
+        # Get strands provider config
+        provider_cfg = cfg.get("providers", {}).get("strands", {})
+
+        # Ensure model is passed through
+        if cfg.get("model") and "model" not in provider_cfg:
+            provider_cfg = dict(provider_cfg)
+            provider_cfg["model"] = cfg.get("model")
+
+        return cls(provider_config=provider_cfg)
+
+    def _provider(self) -> StrandsProvider:
+        """Get the strands provider instance."""
+        return StrandsProvider(self.provider_config)
 
     def complete(self, prompt: str) -> str:
+        """Complete a prompt using the LLM."""
         prov = self._provider()
         return prov.complete(prompt)
 
     def chat(self, message: str) -> str:
+        """Chat with the LLM."""
         prov = self._provider()
         return prov.chat(message)

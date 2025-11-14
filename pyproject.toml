@@ -42,6 +42,7 @@ Tracker = "https://github.com/your-org/hatch-agent/issues"
 [project.scripts]
 "hatch-agent-chat" = "hatch_agent.commands.chat:main"
 "hatch-agent-generate-config" = "hatch_agent.commands.config:generate_config"
+"hatch-agent-multi-task" = "hatch_agent.commands.multi_task:main"
 
 [project.optional-dependencies]
 native = ["strands"]
@@ -57,5 +58,3 @@ python = "3.10"
 template = "default"
 features = ["dev"]
 description = "Developer environment: installs dev extras (pytest, etc.)"
-
-
