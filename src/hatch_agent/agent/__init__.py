@@ -1,8 +1,7 @@
 """Agent subsystem package."""
 
-from .core import Agent
-from .prompts import default_prompt
-from .tools import Tool
+from hatch_agent.agent.core import Agent
+from hatch_agent.agent.prompts import default_prompt
+from hatch_agent.agent.tools import Tool
 
 __all__ = ["Agent", "default_prompt", "Tool"]
-

@@ -62,6 +62,13 @@ class MultiAgentOrchestrator:
         """
         context = context or {}
 
+        # Check if this is a dependency update task
+        is_update_task = "updating the dependency" in task.lower() or "update strategy" in task.lower()
+
+        if is_update_task:
+            # Use specialized agents for dependency updates
+            return self._run_update_agents(task, context)
+
         # Create specialist agents with detailed instructions
         agent1 = self._create_agent(
             name="ConfigurationSpecialist",
@@ -89,6 +96,60 @@ class MultiAgentOrchestrator:
         suggestions.append(response1)
 
         # Agent 2 suggestion
+        response2 = self._get_agent_response(agent2, task, context)
+        suggestions.append(response2)
+
+        # Judge evaluates and selects
+        selected = self._judge_suggestions(judge_agent, task, suggestions, context)
+
+        return {
+            "success": True,
+            "selected_suggestion": selected["suggestion"],
+            "selected_agent": selected["agent_name"],
+            "reasoning": selected["reasoning"],
+            "all_suggestions": [
+                {
+                    "agent": s.agent_name,
+                    "suggestion": s.suggestion,
+                    "reasoning": s.reasoning,
+                    "confidence": s.confidence
+                }
+                for s in suggestions
+            ]
+        }
+
+    def _run_update_agents(self, task: str, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Run specialized agents for dependency updates.
+
+        Uses different specialist agents focused on:
+        - API compatibility analysis
+        - Minimal code migration
+        """
+        # Create specialized update agents
+        agent1 = self._create_agent(
+            name="APIAnalysisSpecialist",
+            role="API compatibility and breaking change analyst",
+            instructions=self._get_api_analysis_prompt()
+        )
+
+        agent2 = self._create_agent(
+            name="CodeMigrationSpecialist",
+            role="Minimal code migration expert",
+            instructions=self._get_code_migration_prompt()
+        )
+
+        judge_agent = self._create_agent(
+            name="UpdateJudge",
+            role="Update strategy evaluator",
+            instructions=self._get_update_judge_prompt()
+        )
+
+        # Get suggestions from both specialist agents
+        suggestions = []
+
+        response1 = self._get_agent_response(agent1, task, context)
+        suggestions.append(response1)
+
         response2 = self._get_agent_response(agent2, task, context)
         suggestions.append(response2)
 
@@ -200,6 +261,127 @@ Always provide your response as valid JSON with:
 - total_scores: object with scores for each agent
 
 This framework ensures consistent judgments across similar inputs."""
+
+    def _get_api_analysis_prompt(self) -> str:
+        """Get the prompt for API analysis specialist (dependency updates)."""
+        return """You are an expert in analyzing API changes and breaking changes between library versions.
+
+Your expertise includes:
+- Changelog analysis and version comparison
+- Breaking change identification
+- API deprecation detection
+- Migration path planning
+- Semantic versioning interpretation
+
+When analyzing dependency updates:
+1. Research the specific version changes (if context provided)
+2. Identify ALL breaking changes between versions
+3. List deprecated APIs that are used
+4. Determine minimum code changes required
+5. Prioritize backward compatibility where possible
+
+CRITICAL CONSTRAINTS FOR CODE CHANGES:
+- Suggest ONLY changes required for API compatibility
+- Do NOT suggest refactoring or improvements
+- Do NOT add new features or abstractions
+- Do NOT change existing code style or patterns
+- Be extremely conservative and minimal
+
+Your analysis should help determine if the update is safe and what minimal changes are needed."""
+
+    def _get_code_migration_prompt(self) -> str:
+        """Get the prompt for code migration specialist (dependency updates)."""
+        return """You are an expert in minimal code migration for dependency updates.
+
+Your expertise includes:
+- Precise code modification for API compatibility
+- Import statement updates
+- Method signature changes
+- Minimal refactoring for breaking changes
+- Preserving existing code structure
+
+STRICT CODE CHANGE RULES (CRITICAL):
+1. Make ONLY changes required for the new API
+2. Do NOT refactor or "improve" existing code
+3. Do NOT add error handling unless API requires it
+4. Do NOT change variable names or code structure
+5. Do NOT add type hints, comments, or documentation
+6. Do NOT change formatting or style
+7. Preserve ALL existing logic and behavior
+8. Make the SMALLEST possible change to work with new API
+
+FORBIDDEN ACTIONS:
+❌ Adding new features or functionality
+❌ Refactoring for "better code quality"
+❌ Changing code organization or structure
+❌ Adding complexity beyond API requirements
+❌ Updating unrelated code
+❌ Style improvements or cleanup
+
+ALLOWED ACTIONS:
+✅ Changing import statements (if API moved)
+✅ Updating method names (if renamed in API)
+✅ Adjusting parameters (if signature changed)
+✅ Replacing removed methods with equivalents
+✅ Minimal syntax updates (if required by new API)
+
+When suggesting code changes:
+- Be extremely specific about file and line numbers
+- Show only the exact lines that must change
+- Explain why each change is absolutely required
+- Verify no alternative approach exists that requires less change"""
+
+    def _get_update_judge_prompt(self) -> str:
+        """Get the prompt for update strategy judge."""
+        return """You are an impartial judge evaluating dependency update strategies.
+
+Your role is to select the safest, most minimal update approach.
+
+EVALUATION FRAMEWORK (use this exact scoring system):
+
+1. MINIMALISM (0-35 points):
+   - Are code changes truly minimal?
+   - Is any suggested change unnecessary?
+   - Could fewer changes achieve the same result?
+   - Deduct points for ANY unnecessary changes
+
+2. CORRECTNESS (0-25 points):
+   - Will the changes work with the new API?
+   - Are all breaking changes addressed?
+   - Is the migration path sound?
+
+3. SAFETY (0-25 points):
+   - Risk of breaking existing functionality?
+   - Are changes reversible?
+   - Is existing behavior preserved?
+
+4. SPECIFICITY (0-15 points):
+   - Are file paths and line numbers provided?
+   - Are changes described precisely?
+   - Can changes be applied unambiguously?
+
+CRITICAL EVALUATION RULES:
+- HEAVILY penalize suggestions that include refactoring
+- HEAVILY penalize suggestions that add complexity
+- PREFER the suggestion with FEWER code changes
+- REJECT any "improvements" beyond API compatibility
+- If both suggestions include unnecessary changes, reduce both scores
+
+DECISION PROCESS:
+1. Score each suggestion using the framework above
+2. Calculate total scores (max 100 points each)
+3. Identify and penalize any non-essential changes
+4. Select the most minimal, safest approach
+5. Document your scoring with specific examples
+
+OUTPUT FORMAT:
+Always provide your response as valid JSON with:
+- selected_agent: name of the agent with most minimal approach
+- suggestion: the selected suggestion (remove any non-essential changes)
+- reasoning: detailed scoring with examples of what was penalized
+- total_scores: object with scores for each agent
+
+Prioritize MINIMALISM above all else. The best update makes the fewest changes."""
 
     def _get_agent_response(self, agent: StrandsAgent, task: str, context: Dict[str, Any]) -> AgentResponse:
         """Get a response from a single agent."""
@@ -362,4 +544,3 @@ Ensure your response is valid JSON."""
                 "suggestion": suggestions[0].suggestion,
                 "reasoning": str(result)
             }
-

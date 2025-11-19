@@ -7,7 +7,7 @@ This analyzer inspects the file/directory layout and will parse a
 from typing import Dict, Any
 import os
 import tomli
-from .dependencies import analyze_dependencies
+from hatch_agent.analyzers.dependencies import analyze_dependencies
 
 
 def analyze_project(path: str) -> Dict[str, Any]:

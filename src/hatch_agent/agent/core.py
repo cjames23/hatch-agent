@@ -1,7 +1,7 @@
 """Agent orchestration: simple, testable Agent class."""
 
 from typing import Optional, Dict, Any
-from .prompts import default_prompt
+from hatch_agent.agent.prompts import default_prompt
 from hatch_agent.agent.llm import LLMClient
 from hatch_agent.agent.multi_agent import MultiAgentOrchestrator
 

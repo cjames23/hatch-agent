@@ -7,7 +7,7 @@ that integrates AI-powered assistance into Hatch workflows.
 
 from hatchling.plugin import hookimpl
 
-from .plugin import AgentEnvironmentCollector
+from hatch_agent.plugin import AgentEnvironmentCollector
 
 
 @hookimpl
@@ -18,4 +18,3 @@ def hatch_register_environment_collector():
     and provide AI-powered assistance for project management.
     """
     return AgentEnvironmentCollector
-

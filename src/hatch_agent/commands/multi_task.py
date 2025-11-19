@@ -91,6 +91,5 @@ def multi_task(task: tuple, config: Path, show_all: bool):
             click.echo(f"   Suggestion: {suggestion['suggestion']}")
             click.echo(f"   Reasoning: {suggestion['reasoning']}")
 
-
 if __name__ == "__main__":
     multi_task()

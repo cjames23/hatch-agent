@@ -44,8 +44,11 @@ Tracker = "https://github.com/your-org/hatch-agent/issues"
 
 [project.scripts]
 "hatch-agent" = "hatch_agent.commands.multi_task:multi_task"
+"hatch-agent-chat" = "hatch_agent.commands.chat:chat"
 "hatch-agent-explain" = "hatch_agent.commands.explain:explain"
 "hatch-agent-add-dep" = "hatch_agent.commands.add_dependency:add_dep"
+"hatch-agent-update-dep" = "hatch_agent.commands.update_dependency:update_dep"
+"hatch-agent-generate-config" = "hatch_agent.commands.config:generate_config"
 
 [project.entry-points.hatch]
 agent = "hatch_agent.hooks"
@@ -64,3 +67,44 @@ python = "3.10"
 template = "default"
 features = ["dev"]
 description = "Developer environment: installs dev extras (pytest, etc.)"
+
+[tool.pytest.ini_options]
+
+# Markers for test categorization
+markers = [
+    "unit: Unit tests",
+    "integration: Integration tests",
+    "slow: Slow running tests",
+    "llm: Tests that interact with LLM providers (mocked)",
+    "filesystem: Tests that interact with filesystem",
+    "network: Tests that require network access (should be mocked)",
+]
+
+[tool.coverage.run]
+source = ["src/hatch_agent"]
+omit = [
+    "*/tests/*",
+    "*/__pycache__/*",
+    "*/site-packages/*",
+    "*/.venv/*",
+]
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+    "@abc.abstractmethod",
+    "class .*\\bProtocol\\):",
+    "@overload",
+]
+
+[tool.coverage.html]
+directory = "htmlcov"

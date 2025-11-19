@@ -255,7 +255,50 @@ hatch-agent-add-dep add flask --skip-sync
 - Modifies `pyproject.toml` correctly
 - Syncs Hatch environment to install the package
 
-### 3. General Tasks
+### 3. Update Dependencies with API Migration
+
+Update dependencies to newer versions and automatically adapt your code to API changes with strict minimal change guidelines.
+
+```bash
+# Update to latest version
+hatch-agent-update-dep requests --version latest
+
+# Update to specific version
+hatch-agent-update-dep pydantic --version ">=2.0.0"
+
+# Preview changes without applying
+hatch-agent-update-dep django --version 5.0.0 --dry-run
+
+# Update without code changes (pyproject.toml only)
+hatch-agent-update-dep flask --version 3.0.0 --no-code-changes
+
+# Show all agent suggestions
+hatch-agent-update-dep pandas --version 2.1.0 --show-all
+```
+
+**What it does:**
+1. Updates the dependency version in `pyproject.toml`
+2. Uses specialized AI agents to analyze API changes between versions
+3. Identifies breaking changes that require code modifications
+4. Generates **minimal, necessary code changes only**
+5. Syncs Hatch environment to install the new version
+
+**Strict Code Change Guidelines:**
+
+The update command uses specialized agents with extremely strict rules:
+
+- ✅ **ONLY** changes required for API compatibility
+- ✅ Updates import statements if API moved
+- ✅ Changes method names if renamed in new version
+- ✅ Adjusts parameters if signature changed
+- ❌ **NO** refactoring or code improvements
+- ❌ **NO** additional features or complexity
+- ❌ **NO** style or formatting changes
+- ❌ **NO** changes to unrelated code
+
+The judge agent specifically scores solutions on **minimalism** (35 points out of 100) and heavily penalizes any unnecessary changes.
+
+### 4. General Tasks
 
 Ask the AI agents any question about Hatch project management.
 
