@@ -32,6 +32,8 @@ class AgentEnvironmentCollector(EnvironmentCollectorInterface):
                 "scripts": {
                     "explain": "hatch-agent-explain",
                     "add-dep": "hatch-agent-add-dep",
+                    "update-dep": "hatch-agent-update-dep",
+                    "sync": "hatch-agent-sync",
                     "task": "hatch-agent",
                 },
             }

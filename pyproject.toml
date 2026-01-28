@@ -49,6 +49,7 @@ Tracker = "https://github.com/your-org/hatch-agent/issues"
 "hatch-agent-add-dep" = "hatch_agent.commands.add_dependency:add_dep"
 "hatch-agent-update-dep" = "hatch_agent.commands.update_dependency:update_dep"
 "hatch-agent-generate-config" = "hatch_agent.commands.config:generate_config"
+"hatch-agent-sync" = "hatch_agent.commands.sync:sync"
 
 [project.entry-points.hatch]
 agent = "hatch_agent.hooks"

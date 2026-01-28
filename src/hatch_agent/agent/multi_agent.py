@@ -172,6 +172,230 @@ class MultiAgentOrchestrator:
             ]
         }
 
+    def run_bulk_update_analysis(
+        self,
+        updates: List[Dict[str, str]],
+        context: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Analyze multiple package updates efficiently.
+
+        This method processes multiple dependency updates and aggregates the
+        breaking changes and code modifications across all packages.
+
+        Args:
+            updates: List of dicts with keys: package, old_version, new_version
+            context: Project context including source files
+
+        Returns:
+            Aggregated analysis with all breaking changes and code modifications
+        """
+        all_code_changes: List[Dict[str, Any]] = []
+        all_breaking_changes: List[Dict[str, str]] = []
+        failed_packages: List[str] = []
+
+        for update in updates:
+            package = update.get("package", "unknown")
+            old_version = update.get("old_version", "unknown")
+            new_version = update.get("new_version", "unknown")
+
+            # Build task for this specific update
+            task = self._build_bulk_update_task(update, updates)
+
+            # Merge update-specific context
+            update_context = {
+                **context,
+                "current_package": package,
+                "current_update": update
+            }
+
+            # Run existing update agents
+            try:
+                result = self._run_update_agents(task, update_context)
+
+                # Extract and aggregate results
+                if result.get("success"):
+                    plan = self._extract_update_plan(result.get("selected_suggestion", ""))
+                    if plan:
+                        # Add package info to each breaking change
+                        for bc in plan.get("breaking_changes", []):
+                            all_breaking_changes.append({
+                                "package": package,
+                                "old_version": old_version,
+                                "new_version": new_version,
+                                "change": bc
+                            })
+
+                        # Add package info to each code change
+                        for cc in plan.get("code_changes", []):
+                            cc["package"] = package
+                            all_code_changes.append(cc)
+                else:
+                    failed_packages.append(package)
+            except Exception:
+                failed_packages.append(package)
+
+        # Deduplicate code changes (same file/line might be suggested multiple times)
+        unique_changes = self._deduplicate_code_changes(all_code_changes)
+
+        return {
+            "success": True,
+            "breaking_changes": all_breaking_changes,
+            "code_changes": unique_changes,
+            "packages_analyzed": len(updates),
+            "failed_packages": failed_packages
+        }
+
+    def _build_bulk_update_task(
+        self,
+        current_update: Dict[str, str],
+        all_updates: List[Dict[str, str]]
+    ) -> str:
+        """Build a task description for bulk update analysis.
+
+        Args:
+            current_update: The specific package being analyzed
+            all_updates: All packages being updated (for context)
+
+        Returns:
+            Task description string
+        """
+        package = current_update.get("package", "unknown")
+        old_version = current_update.get("old_version", "unknown")
+        new_version = current_update.get("new_version", "unknown")
+
+        # Build context about other updates
+        other_updates = [u for u in all_updates if u.get("package") != package]
+        other_updates_str = ""
+        if other_updates:
+            other_list = ", ".join([
+                f"{u.get('package')} ({u.get('old_version')} → {u.get('new_version')})"
+                for u in other_updates[:5]  # Limit to 5 for context
+            ])
+            if len(other_updates) > 5:
+                other_list += f" and {len(other_updates) - 5} more"
+            other_updates_str = f"\n\nNote: Other packages being updated in this sync: {other_list}"
+
+        return f"""You are analyzing the dependency '{package}' update from {old_version} to {new_version}.
+
+Your task is to identify:
+
+1. Any breaking API changes between these versions
+2. ONLY the minimal code changes required for API compatibility
+3. Specific file paths and change descriptions
+
+CRITICAL REQUIREMENTS:
+- Identify ONLY changes required for API compatibility
+- Do NOT suggest refactoring or improvements
+- Do NOT suggest adding new features
+- Do NOT suggest style or formatting changes
+- Be extremely conservative with suggestions
+- Consider interactions with other packages being updated{other_updates_str}
+
+RESPONSE FORMAT (required):
+
+Your response MUST include this structured section at the END:
+
+UPDATE_PLAN:
+{{
+    "version_spec": ">={new_version}",
+    "breaking_changes": [
+        "Description of breaking change 1",
+        "Description of breaking change 2"
+    ],
+    "code_changes": [
+        {{
+            "file": "src/module/file.py",
+            "line_range": "45-50",
+            "description": "Replace deprecated method X with Y",
+            "reason": "Method X was removed in version {new_version}"
+        }}
+    ]
+}}
+
+If NO breaking changes or code changes are needed, use empty arrays:
+"breaking_changes": [], "code_changes": []
+
+Provide this JSON block AFTER your explanation."""
+
+    def _extract_update_plan(self, suggestion: str) -> Optional[Dict[str, Any]]:
+        """Extract structured update plan from agent suggestion.
+
+        Args:
+            suggestion: The agent's suggestion text
+
+        Returns:
+            Parsed update plan dict or None if parsing fails
+        """
+        if "UPDATE_PLAN:" not in suggestion:
+            return None
+
+        try:
+            plan_part = suggestion.split("UPDATE_PLAN:")[1].strip()
+
+            # Find the JSON object
+            start = plan_part.find("{")
+            end = plan_part.rfind("}") + 1
+
+            if start == -1 or end == 0:
+                return None
+
+            json_str = plan_part[start:end]
+            plan_data = json.loads(json_str)
+
+            return plan_data
+        except (json.JSONDecodeError, IndexError):
+            return None
+
+    def _deduplicate_code_changes(
+        self,
+        code_changes: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        """Deduplicate code changes that affect the same file/lines.
+
+        If multiple packages suggest changes to the same file and line range,
+        we keep only one (preferring the one with more detail).
+
+        Args:
+            code_changes: List of code change dicts
+
+        Returns:
+            Deduplicated list of code changes
+        """
+        seen: Dict[str, Dict[str, Any]] = {}
+
+        for change in code_changes:
+            file_path = change.get("file", "")
+            line_range = change.get("line_range", "")
+
+            # Create a unique key based on file and line range
+            key = f"{file_path}:{line_range}"
+
+            if key not in seen:
+                seen[key] = change
+            else:
+                # Keep the change with more detailed description
+                existing = seen[key]
+                existing_desc_len = len(existing.get("description", ""))
+                new_desc_len = len(change.get("description", ""))
+
+                if new_desc_len > existing_desc_len:
+                    # Merge package info if different packages suggest same change
+                    packages = set()
+                    if "package" in existing:
+                        packages.add(existing["package"])
+                    if "package" in change:
+                        packages.add(change["package"])
+                    change["packages"] = list(packages) if len(packages) > 1 else None
+                    seen[key] = change
+                elif "package" in change and "package" in existing:
+                    # Just add the package to the existing change
+                    if "packages" not in existing:
+                        existing["packages"] = [existing["package"]]
+                    if change["package"] not in existing["packages"]:
+                        existing["packages"].append(change["package"])
+
+        return list(seen.values())
+
     def _get_configuration_specialist_prompt(self) -> str:
         """Get the detailed prompt for the configuration specialist."""
         return """You are an expert in Hatch project configuration and dependency management.
