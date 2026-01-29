@@ -8,95 +8,162 @@ import pytest
 from hatch_agent.agent.multi_agent import MultiAgentOrchestrator, AgentResponse
 
 
+class TestAgentResponse:
+    """Test AgentResponse dataclass."""
+
+    def test_agent_response_creation(self):
+        """Test creating an AgentResponse."""
+        response = AgentResponse(
+            agent_name="TestAgent",
+            suggestion="Use requests library",
+            reasoning="It's well-maintained",
+            confidence=0.95
+        )
+        assert response.agent_name == "TestAgent"
+        assert response.suggestion == "Use requests library"
+        assert response.reasoning == "It's well-maintained"
+        assert response.confidence == 0.95
+
+    def test_agent_response_attributes(self):
+        """Test AgentResponse has all expected attributes."""
+        response = AgentResponse(
+            agent_name="Agent1",
+            suggestion="Suggestion",
+            reasoning="Reasoning",
+            confidence=0.8
+        )
+        assert hasattr(response, 'agent_name')
+        assert hasattr(response, 'suggestion')
+        assert hasattr(response, 'reasoning')
+        assert hasattr(response, 'confidence')
+
+
+class TestMultiAgentOrchestratorInit:
+    """Test MultiAgentOrchestrator initialization."""
+
+    def test_default_initialization(self):
+        """Test orchestrator with default values."""
+        orchestrator = MultiAgentOrchestrator()
+        assert orchestrator.provider_name == "openai"
+        assert orchestrator.provider_config == {}
+
+    def test_custom_provider(self):
+        """Test orchestrator with custom provider."""
+        orchestrator = MultiAgentOrchestrator(provider_name="anthropic")
+        assert orchestrator.provider_name == "anthropic"
+
+    def test_custom_config(self):
+        """Test orchestrator with custom config."""
+        config = {"api_key": "test-key", "model": "gpt-4"}
+        orchestrator = MultiAgentOrchestrator(provider_config=config)
+        assert orchestrator.provider_config == config
+
+
+class TestMultiAgentOrchestratorCreateAgent:
+    """Test _create_agent method."""
+
+    @patch("hatch_agent.agent.multi_agent.StrandsAgent")
+    def test_create_agent_returns_agent(self, mock_strands):
+        """Test _create_agent returns a StrandsAgent."""
+        mock_agent = MagicMock()
+        mock_strands.return_value = mock_agent
+        
+        orchestrator = MultiAgentOrchestrator()
+        agent = orchestrator._create_agent(
+            name="TestAgent",
+            role="Test role",
+            instructions="Test instructions"
+        )
+        
+        assert agent is mock_agent
+        mock_strands.assert_called_once()
+
+    @patch("hatch_agent.agent.multi_agent.StrandsAgent")
+    def test_create_agent_uses_system_prompt(self, mock_strands):
+        """Test _create_agent passes correct system prompt."""
+        orchestrator = MultiAgentOrchestrator()
+        orchestrator._create_agent(
+            name="ConfigAgent",
+            role="Configuration expert",
+            instructions="Analyze configs"
+        )
+        
+        call_kwargs = mock_strands.call_args[1]
+        assert "system_prompt" in call_kwargs
+        assert "Configuration expert" in call_kwargs["system_prompt"]
+        assert "Analyze configs" in call_kwargs["system_prompt"]
+
+
+class TestMultiAgentOrchestratorRun:
+    """Test run method."""
+
+    @patch.object(MultiAgentOrchestrator, '_judge_suggestions')
+    @patch.object(MultiAgentOrchestrator, '_get_agent_response')
+    @patch.object(MultiAgentOrchestrator, '_create_agent')
+    def test_run_general_task(self, mock_create, mock_get_response, mock_judge):
+        """Test run with general task."""
+        mock_agent = MagicMock()
+        mock_create.return_value = mock_agent
+        
+        mock_get_response.return_value = AgentResponse(
+            agent_name="Agent1",
+            suggestion="Suggestion",
+            reasoning="Reason",
+            confidence=0.9
+        )
+        
+        mock_judge.return_value = {
+            "suggestion": "Best suggestion",
+            "agent_name": "Agent1",
+            "reasoning": "Best choice"
+        }
+        
+        orchestrator = MultiAgentOrchestrator()
+        result = orchestrator.run("Configure hatch project")
+        
+        assert result["success"] is True
+        assert result["selected_suggestion"] == "Best suggestion"
+        assert "all_suggestions" in result
+        assert len(result["all_suggestions"]) == 2  # Two specialist agents
+
+    @patch.object(MultiAgentOrchestrator, '_run_update_agents')
+    def test_run_detects_update_task(self, mock_update_agents):
+        """Test run routes update tasks to specialized agents."""
+        mock_update_agents.return_value = {
+            "success": True,
+            "selected_suggestion": "Update plan"
+        }
+        
+        orchestrator = MultiAgentOrchestrator()
+        orchestrator.run("updating the dependency requests to 2.31.0")
+        
+        mock_update_agents.assert_called_once()
+
+    @patch.object(MultiAgentOrchestrator, '_run_update_agents')
+    def test_run_detects_update_strategy_task(self, mock_update_agents):
+        """Test run routes update strategy tasks to specialized agents."""
+        mock_update_agents.return_value = {"success": True, "selected_suggestion": "Plan"}
+        
+        orchestrator = MultiAgentOrchestrator()
+        orchestrator.run("What's the best update strategy for django?")
+        
+        mock_update_agents.assert_called_once()
+
+
 class TestMultiAgentSystem:
     """Test multi-agent coordination."""
-
-    def test_multi_agent_initialization(self, mock_llm_provider):
-        """Test initializing multiple agents."""
-        # Would test MultiAgentSystem from multi_agent.py
-        pass
-
-    def test_agent_communication(self, mock_llm_provider):
-        """Test communication between agents."""
-        pass
 
     def test_task_delegation(self, mock_llm_provider):
         """Test delegating tasks to appropriate agents."""
         mock_llm_provider.generate.return_value = "Task delegated to specialist agent"
-
         result = mock_llm_provider.generate("Delegate task")
         assert "delegated" in result.lower()
-
-    def test_parallel_execution(self, mock_llm_provider):
-        """Test parallel agent execution."""
-        pass
-
-    def test_sequential_execution(self, mock_llm_provider):
-        """Test sequential agent execution."""
-        pass
-
-
-class TestAgentSpecialization:
-    """Test specialized agent roles."""
 
     def test_analyzer_agent(self, mock_llm_provider):
         """Test analyzer agent specialization."""
         mock_llm_provider.generate.return_value = "Analysis complete: 5 issues found"
-
         result = mock_llm_provider.generate("Analyze code")
         assert "analysis" in result.lower()
-
-    def test_planner_agent(self, mock_llm_provider):
-        """Test planner agent specialization."""
-        pass
-
-    def test_executor_agent(self, mock_llm_provider):
-        """Test executor agent specialization."""
-        pass
-
-    def test_reviewer_agent(self, mock_llm_provider):
-        """Test reviewer agent specialization."""
-        pass
-
-
-class TestAgentCoordination:
-    """Test agent coordination mechanisms."""
-
-    def test_coordinate_tasks(self, mock_llm_provider):
-        """Test coordinating tasks across agents."""
-        pass
-
-    def test_resolve_conflicts(self, mock_llm_provider):
-        """Test resolving agent conflicts."""
-        pass
-
-    def test_merge_results(self):
-        """Test merging results from multiple agents."""
-        pass
-
-    def test_consensus_building(self, mock_llm_provider):
-        """Test building consensus among agents."""
-        pass
-
-
-class TestAgentWorkflow:
-    """Test multi-agent workflows."""
-
-    def test_workflow_execution(self, mock_llm_provider):
-        """Test executing multi-agent workflow."""
-        pass
-
-    def test_workflow_error_handling(self, mock_llm_provider):
-        """Test workflow error handling."""
-        pass
-
-    def test_workflow_rollback(self):
-        """Test workflow rollback on failure."""
-        pass
-
-    def test_workflow_checkpoints(self):
-        """Test workflow checkpointing."""
-        pass
 
 
 class TestBulkUpdateAnalysis:

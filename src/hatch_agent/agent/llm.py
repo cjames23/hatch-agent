@@ -11,7 +11,7 @@ The multi-agent approach uses:
 from typing import Dict, Any
 from dataclasses import dataclass
 
-from strands_agents import Agent as StrandsAgent, AgentConfig
+from strands import Agent as StrandsAgent
 
 
 class StrandsProvider:
@@ -61,7 +61,6 @@ class StrandsProvider:
             return output
         else:
             # Single agent mode - use strands-agents directly
-            underlying_provider = self.config.get("underlying_provider", "openai")
             underlying_config = self.config.get("underlying_config", {})
 
             # Pass through model configuration
@@ -69,16 +68,10 @@ class StrandsProvider:
                 underlying_config = dict(underlying_config)
                 underlying_config["model"] = self.config.get("model")
 
-            config = AgentConfig(
-                name="HatchAgent",
-                role="Hatch project management assistant",
-                instructions="You are an expert in Hatch project management, configuration, and automation.",
-                provider=underlying_provider,
-                provider_config=underlying_config
-            )
-
-            agent = StrandsAgent(config)
-            return agent.run(prompt)
+            system_prompt = "You are an expert in Hatch project management, configuration, and automation."
+            agent = StrandsAgent(system_prompt=system_prompt)
+            result = agent(prompt)
+            return str(result)
 
     def chat(self, message: str) -> str:
         """Chat interface - routes to complete."""

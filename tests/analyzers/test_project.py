@@ -5,23 +5,86 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from hatch_agent.analyzers.project import analyze_project
+
+
+class TestAnalyzeProject:
+    """Test analyze_project function."""
+
+    def test_analyze_project_with_pyproject(self, temp_project_dir):
+        """Test analyzing project with pyproject.toml."""
+        (temp_project_dir / "src").mkdir()
+        (temp_project_dir / "tests").mkdir()
+        pyproject = temp_project_dir / "pyproject.toml"
+        pyproject.write_text("""
+[project]
+name = "test-project"
+version = "1.0.0"
+dependencies = ["requests>=2.0"]
+""")
+        
+        result = analyze_project(str(temp_project_dir))
+        
+        assert "src" in result["dirs"]
+        assert "tests" in result["dirs"]
+        assert "pyproject.toml" in result["files"]
+        assert result["pyproject"]["has_pyproject"] is True
+        assert result["pyproject"]["project"]["name"] == "test-project"
+
+    def test_analyze_project_without_pyproject(self, temp_project_dir):
+        """Test analyzing project without pyproject.toml."""
+        (temp_project_dir / "src").mkdir()
+        (temp_project_dir / "README.md").touch()
+        
+        result = analyze_project(str(temp_project_dir))
+        
+        assert "src" in result["dirs"]
+        assert "README.md" in result["files"]
+        assert result["pyproject"] is None
+
+    def test_analyze_project_empty_dir(self, temp_project_dir):
+        """Test analyzing empty directory."""
+        empty_dir = temp_project_dir / "empty"
+        empty_dir.mkdir()
+        
+        result = analyze_project(str(empty_dir))
+        
+        assert result["files"] == []
+        assert result["dirs"] == []
+
+    def test_analyze_project_dir_not_found(self, temp_project_dir):
+        """Test analyzing non-existent directory."""
+        result = analyze_project(str(temp_project_dir / "nonexistent"))
+        
+        assert "error" in result
+        assert "not found" in result["error"]
+
+    def test_analyze_project_includes_dependencies(self, temp_project_dir):
+        """Test that analyze_project includes dependency analysis."""
+        pyproject = temp_project_dir / "pyproject.toml"
+        pyproject.write_text("""
+[project]
+name = "test"
+dependencies = ["click>=8.0"]
+""")
+        
+        result = analyze_project(str(temp_project_dir))
+        
+        assert "dependencies" in result
+        assert "click>=8.0" in result["dependencies"]["dependencies"]
+
 
 class TestProjectAnalyzer:
     """Test project analyzer."""
 
     def test_analyze_project_structure(self, temp_project_dir):
         """Test analyzing project structure."""
-        # Would test project analysis from project.py
         (temp_project_dir / "src").mkdir()
         (temp_project_dir / "tests").mkdir()
         (temp_project_dir / "pyproject.toml").touch()
 
         assert (temp_project_dir / "src").exists()
         assert (temp_project_dir / "tests").exists()
-
-    def test_detect_project_type(self, sample_pyproject_toml):
-        """Test detecting project type."""
-        pass
 
     def test_find_source_directories(self, temp_project_dir):
         """Test finding source directories."""

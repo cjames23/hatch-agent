@@ -4,6 +4,185 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
+from hatch_agent.agent.llm import LLMClient, StrandsProvider
+
+
+class TestStrandsProvider:
+    """Test StrandsProvider class."""
+
+    def test_init_stores_config(self):
+        """Test that __init__ stores config."""
+        config = {"mode": "single", "model": "gpt-4"}
+        provider = StrandsProvider(config)
+        assert provider.config == config
+
+    def test_complete_multi_agent_mode(self):
+        """Test complete in multi-agent mode."""
+        # Patch at the import location inside the complete method
+        with patch.dict('sys.modules', {'hatch_agent.agent.multi_agent': MagicMock()}):
+            import sys
+            mock_module = sys.modules['hatch_agent.agent.multi_agent']
+            mock_orchestrator = MagicMock()
+            mock_orchestrator.run.return_value = {
+                "selected_suggestion": "Use requests library",
+                "selected_agent": "ConfigSpecialist",
+                "reasoning": "Best for HTTP"
+            }
+            mock_module.MultiAgentOrchestrator.return_value = mock_orchestrator
+            
+            config = {"mode": "multi-agent", "underlying_provider": "openai"}
+            provider = StrandsProvider(config)
+            result = provider.complete("Add HTTP client")
+            
+            assert "Use requests library" in result
+            assert "ConfigSpecialist" in result
+
+    @patch("hatch_agent.agent.llm.StrandsAgent")
+    def test_complete_single_mode(self, mock_strands_agent):
+        """Test complete in single agent mode."""
+        mock_agent_instance = MagicMock()
+        mock_agent_instance.return_value = "Single agent response"
+        mock_strands_agent.return_value = mock_agent_instance
+        
+        config = {"mode": "single"}
+        provider = StrandsProvider(config)
+        result = provider.complete("Test prompt")
+        
+        assert "Single agent response" in result
+        mock_strands_agent.assert_called_once()
+
+    def test_complete_default_mode_is_multi_agent(self):
+        """Test that default mode is multi-agent."""
+        with patch.dict('sys.modules', {'hatch_agent.agent.multi_agent': MagicMock()}):
+            import sys
+            mock_module = sys.modules['hatch_agent.agent.multi_agent']
+            mock_orchestrator = MagicMock()
+            mock_orchestrator.run.return_value = {
+                "selected_suggestion": "suggestion",
+                "selected_agent": "agent",
+                "reasoning": "reason"
+            }
+            mock_module.MultiAgentOrchestrator.return_value = mock_orchestrator
+            
+            config = {}  # No mode specified
+            provider = StrandsProvider(config)
+            provider.complete("Test")
+            
+            mock_module.MultiAgentOrchestrator.assert_called()
+
+    def test_complete_passes_model_to_config(self):
+        """Test that model is passed through to underlying config."""
+        with patch.dict('sys.modules', {'hatch_agent.agent.multi_agent': MagicMock()}):
+            import sys
+            mock_module = sys.modules['hatch_agent.agent.multi_agent']
+            mock_orchestrator = MagicMock()
+            mock_orchestrator.run.return_value = {
+                "selected_suggestion": "s",
+                "selected_agent": "a",
+                "reasoning": "r"
+            }
+            mock_module.MultiAgentOrchestrator.return_value = mock_orchestrator
+            
+            config = {"mode": "multi-agent", "model": "gpt-4-turbo"}
+            provider = StrandsProvider(config)
+            provider.complete("Test")
+            
+            # Verify orchestrator was called
+            mock_module.MultiAgentOrchestrator.assert_called()
+
+    def test_chat_routes_to_complete(self):
+        """Test that chat routes to complete."""
+        config = {}
+        provider = StrandsProvider(config)
+        
+        with patch.object(provider, 'complete', return_value="response") as mock_complete:
+            result = provider.chat("message")
+            mock_complete.assert_called_once_with("message")
+            assert result == "response"
+
+
+class TestLLMClient:
+    """Test LLMClient class."""
+
+    def test_from_config_new_style(self):
+        """Test from_config with new-style config."""
+        config = {
+            "underlying_provider": "openai",
+            "model": "gpt-4",
+            "underlying_config": {"api_key": "test"}
+        }
+        client = LLMClient.from_config(config)
+        assert client.provider_config == config
+
+    def test_from_config_with_mode(self):
+        """Test from_config with mode in config."""
+        config = {"mode": "single", "model": "gpt-4"}
+        client = LLMClient.from_config(config)
+        assert client.provider_config == config
+
+    def test_from_config_old_style_non_strands(self):
+        """Test from_config converts old-style non-strands config."""
+        config = {
+            "provider": "openai",
+            "model": "gpt-4",
+            "providers": {
+                "openai": {"api_key": "test-key"}
+            }
+        }
+        client = LLMClient.from_config(config)
+        assert client.provider_config["underlying_provider"] == "openai"
+        assert client.provider_config["model"] == "gpt-4"
+
+    def test_from_config_old_style_strands(self):
+        """Test from_config with old-style strands config."""
+        config = {
+            "provider": "strands",
+            "model": "gpt-4",
+            "providers": {
+                "strands": {
+                    "underlying_provider": "openai"
+                }
+            }
+        }
+        client = LLMClient.from_config(config)
+        assert "model" in client.provider_config
+
+    def test_from_config_model_passthrough(self):
+        """Test that model is passed through in old-style config."""
+        config = {
+            "provider": "strands",
+            "model": "claude-3",
+            "providers": {
+                "strands": {}
+            }
+        }
+        client = LLMClient.from_config(config)
+        assert client.provider_config.get("model") == "claude-3"
+
+    def test_provider_returns_strands_provider(self):
+        """Test _provider returns StrandsProvider instance."""
+        client = LLMClient(provider_config={"model": "test"})
+        provider = client._provider()
+        assert isinstance(provider, StrandsProvider)
+
+    def test_complete_calls_provider(self):
+        """Test complete calls through to provider."""
+        client = LLMClient(provider_config={})
+        
+        with patch.object(StrandsProvider, 'complete', return_value="response") as mock:
+            result = client.complete("test prompt")
+            mock.assert_called_once_with("test prompt")
+            assert result == "response"
+
+    def test_chat_calls_provider(self):
+        """Test chat calls through to provider."""
+        client = LLMClient(provider_config={})
+        
+        with patch.object(StrandsProvider, 'chat', return_value="response") as mock:
+            result = client.chat("test message")
+            mock.assert_called_once_with("test message")
+            assert result == "response"
+
 
 class TestLLMProvider:
     """Test LLM provider abstraction."""

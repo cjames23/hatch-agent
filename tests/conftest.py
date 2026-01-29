@@ -201,3 +201,76 @@ def mock_llm_provider():
     provider.stream.return_value = iter(["Mocked ", "streaming ", "response"])
     return provider
 
+
+@pytest.fixture
+def mock_hatch_app():
+    """Mock Hatch Application for testing."""
+    app = MagicMock()
+    app.project.config.envs = {"default": {}, "test": {}, "dev": {}}
+    mock_env = MagicMock()
+    mock_env.name = "default"
+    mock_env.exists.return_value = True
+    mock_env.dependencies = ["pytest", "requests"]
+    mock_env.use_uv = False
+    app.get_environment.return_value = mock_env
+    app.env_active = "default"
+    return app
+
+
+@pytest.fixture
+def mock_pypi_response():
+    """Mock PyPI API response."""
+    return {
+        "info": {
+            "version": "2.31.0",
+            "name": "requests",
+            "summary": "Python HTTP for Humans",
+            "home_page": "https://requests.readthedocs.io",
+            "license": "Apache 2.0",
+            "project_urls": {
+                "Changelog": "https://github.com/psf/requests/blob/main/HISTORY.md",
+                "Documentation": "https://requests.readthedocs.io"
+            }
+        },
+        "releases": {
+            "2.28.0": [{"upload_time": "2022-06-29"}],
+            "2.31.0": [{"upload_time": "2023-05-22"}],
+        }
+    }
+
+
+@pytest.fixture
+def mock_agent():
+    """Mock Agent instance for testing commands."""
+    agent = MagicMock()
+    agent.run_task.return_value = {
+        "success": True,
+        "selected_suggestion": "Use pytest for testing",
+        "selected_agent": "ConfigSpecialist",
+        "reasoning": "Best practice for Python testing",
+        "all_suggestions": [
+            {
+                "agent": "ConfigSpecialist",
+                "suggestion": "Use pytest for testing",
+                "reasoning": "Well-maintained",
+                "confidence": 0.9
+            },
+            {
+                "agent": "WorkflowSpecialist",
+                "suggestion": "Use unittest",
+                "reasoning": "Built-in",
+                "confidence": 0.7
+            }
+        ]
+    }
+    agent.chat.return_value = "Mocked chat response"
+    agent.prepare.return_value = None
+    return agent
+
+
+@pytest.fixture
+def cli_runner():
+    """Click CLI runner for testing commands."""
+    from click.testing import CliRunner
+    return CliRunner()
+

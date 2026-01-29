@@ -38,9 +38,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://example.org/hatch-agent"
-Source = "https://github.com/your-org/hatch-agent"
-Tracker = "https://github.com/your-org/hatch-agent/issues"
+Homepage = "https://github.com/hawkinscary/hatch-agent"
+Source = "https://github.com/hawkinscary/hatch-agent"
+Tracker = "https://github.com/hawkinscary/hatch-agent/issues"
 
 [project.scripts]
 "hatch-agent" = "hatch_agent.commands.multi_task:multi_task"

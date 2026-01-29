@@ -9,7 +9,7 @@ from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 import json
 
-from strands_agents import Agent as StrandsAgent, AgentConfig
+from strands import Agent as StrandsAgent
 
 
 @dataclass
@@ -41,14 +41,8 @@ class MultiAgentOrchestrator:
 
     def _create_agent(self, name: str, role: str, instructions: str) -> StrandsAgent:
         """Create an agent with the given configuration."""
-        config = AgentConfig(
-            name=name,
-            role=role,
-            instructions=instructions,
-            provider=self.provider_name,
-            provider_config=self.provider_config
-        )
-        return StrandsAgent(config)
+        system_prompt = f"You are a {role}.\n\n{instructions}"
+        return StrandsAgent(system_prompt=system_prompt)
 
     def run(self, task: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Run the multi-agent system to solve a task.

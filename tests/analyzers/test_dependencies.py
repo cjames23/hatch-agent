@@ -4,13 +4,81 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
+from hatch_agent.analyzers.dependencies import analyze_dependencies
+
+
+class TestAnalyzeDependencies:
+    """Test analyze_dependencies function."""
+
+    def test_analyze_pep621_dependencies(self, temp_project_dir):
+        """Test analyzing PEP 621 style dependencies."""
+        pyproject = temp_project_dir / "pyproject.toml"
+        pyproject.write_text("""
+[project]
+name = "test-project"
+dependencies = [
+    "requests>=2.28.0",
+    "click>=8.0.0",
+]
+""")
+        result = analyze_dependencies(str(pyproject))
+        
+        assert "requests>=2.28.0" in result["dependencies"]
+        assert "click>=8.0.0" in result["dependencies"]
+
+    def test_analyze_poetry_dependencies(self, temp_project_dir):
+        """Test analyzing Poetry style dependencies."""
+        pyproject = temp_project_dir / "pyproject.toml"
+        pyproject.write_text("""
+[tool.poetry.dependencies]
+python = "^3.10"
+requests = "^2.28.0"
+""")
+        result = analyze_dependencies(str(pyproject))
+        
+        # Poetry deps are converted to strings
+        assert any("requests" in d for d in result["dependencies"])
+
+    def test_analyze_file_not_found(self, temp_project_dir):
+        """Test analyzing non-existent file."""
+        result = analyze_dependencies(str(temp_project_dir / "nonexistent.toml"))
+        
+        assert "error" in result
+        assert "not found" in result["error"]
+
+    def test_analyze_empty_dependencies(self, temp_project_dir):
+        """Test analyzing project with no dependencies."""
+        pyproject = temp_project_dir / "pyproject.toml"
+        pyproject.write_text("""
+[project]
+name = "test-project"
+""")
+        result = analyze_dependencies(str(pyproject))
+        
+        assert result["dependencies"] == []
+
+    def test_analyze_mixed_dependencies(self, temp_project_dir):
+        """Test analyzing project with both PEP 621 and Poetry deps."""
+        pyproject = temp_project_dir / "pyproject.toml"
+        pyproject.write_text("""
+[project]
+dependencies = ["requests>=2.0"]
+
+[tool.poetry.dependencies]
+click = "^8.0"
+""")
+        result = analyze_dependencies(str(pyproject))
+        
+        assert "requests>=2.0" in result["dependencies"]
+        # Poetry deps also included
+        assert len(result["dependencies"]) >= 1
+
 
 class TestDependencyAnalyzer:
     """Test dependency analyzer."""
 
     def test_parse_dependencies(self, mock_project_metadata):
         """Test parsing project dependencies."""
-        # Would test dependency parsing from dependencies.py
         deps = mock_project_metadata["dependencies"]
         assert "requests>=2.28.0" in deps
 
@@ -18,10 +86,6 @@ class TestDependencyAnalyzer:
         """Test parsing optional dependencies."""
         optional = mock_project_metadata["optional_dependencies"]
         assert "dev" in optional
-
-    def test_extract_dependency_specs(self):
-        """Test extracting dependency specifications."""
-        pass
 
     def test_parse_version_specifiers(self):
         """Test parsing version specifiers."""
@@ -31,7 +95,6 @@ class TestDependencyAnalyzer:
             "package~=1.5.0",
             "package>=1.0,<2.0",
         ]
-        # Would test version specifier parsing
         for spec in specs:
             assert ">=" in spec or "==" in spec or "~=" in spec
 

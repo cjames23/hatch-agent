@@ -6,6 +6,94 @@ from pathlib import Path
 import pytest
 
 
+from hatch_agent.agent.tools import Tool, read_file, TOOL_REGISTRY
+
+
+class TestReadFileTool:
+    """Test the read_file tool function."""
+
+    def test_read_file_success(self, temp_project_dir):
+        """Test reading an existing file successfully."""
+        test_file = temp_project_dir / "test.txt"
+        test_file.write_text("Hello, World!")
+
+        result = read_file(str(test_file))
+        assert result["success"] is True
+        assert result["content"] == "Hello, World!"
+
+    def test_read_file_not_found(self, temp_project_dir):
+        """Test reading a non-existent file."""
+        result = read_file(str(temp_project_dir / "nonexistent.txt"))
+        assert result["success"] is False
+        assert "error" in result
+
+    def test_read_file_with_unicode(self, temp_project_dir):
+        """Test reading a file with unicode content."""
+        test_file = temp_project_dir / "unicode.txt"
+        test_file.write_text("Hello 世界 🎉")
+
+        result = read_file(str(test_file))
+        assert result["success"] is True
+        assert "世界" in result["content"]
+
+    def test_read_file_empty(self, temp_project_dir):
+        """Test reading an empty file."""
+        test_file = temp_project_dir / "empty.txt"
+        test_file.write_text("")
+
+        result = read_file(str(test_file))
+        assert result["success"] is True
+        assert result["content"] == ""
+
+
+class TestToolDataclass:
+    """Test the Tool dataclass."""
+
+    def test_tool_creation(self):
+        """Test creating a Tool instance."""
+        tool = Tool(
+            name="test_tool",
+            description="A test tool",
+            func=lambda x: x
+        )
+        assert tool.name == "test_tool"
+        assert tool.description == "A test tool"
+        assert callable(tool.func)
+
+    def test_tool_func_is_callable(self):
+        """Test that tool func attribute is callable."""
+        def my_func(arg):
+            return arg * 2
+
+        tool = Tool(name="double", description="Doubles input", func=my_func)
+        assert tool.func(5) == 10
+
+
+class TestToolRegistry:
+    """Test tool registration and discovery."""
+
+    def test_registry_contains_read_file(self):
+        """Test that TOOL_REGISTRY contains read_file tool."""
+        assert "read_file" in TOOL_REGISTRY
+
+    def test_read_file_tool_in_registry(self):
+        """Test the read_file tool in the registry has correct attributes."""
+        tool = TOOL_REGISTRY["read_file"]
+        assert isinstance(tool, Tool)
+        assert tool.name == "read_file"
+        assert "Read" in tool.description or "read" in tool.description.lower()
+
+    def test_read_file_tool_func_works(self, temp_project_dir):
+        """Test that the read_file tool in registry actually works."""
+        test_file = temp_project_dir / "registry_test.txt"
+        test_file.write_text("Registry test content")
+
+        tool = TOOL_REGISTRY["read_file"]
+        result = tool.func(str(test_file))
+        assert result["success"] is True
+        assert result["content"] == "Registry test content"
+
+
 class TestFileSystemTools:
     """Test file system interaction tools."""
 
@@ -14,9 +102,9 @@ class TestFileSystemTools:
         test_file = temp_project_dir / "test.txt"
         test_file.write_text("Hello, World!")
 
-        # Would test file reading tool from tools.py
-        content = test_file.read_text()
-        assert content == "Hello, World!"
+        result = read_file(str(test_file))
+        assert result["success"] is True
+        assert result["content"] == "Hello, World!"
 
     def test_write_file_tool(self, temp_project_dir):
         """Test writing files."""

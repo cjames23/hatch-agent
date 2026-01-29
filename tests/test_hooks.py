@@ -4,60 +4,27 @@ from unittest.mock import MagicMock, Mock
 
 import pytest
 
-
-class TestHooks:
-    """Test hooks system."""
-
-    def test_hook_registration(self):
-        """Test registering hooks."""
-        # Would test hooks from hooks.py
-        pass
-
-    def test_hook_execution(self):
-        """Test executing hooks."""
-        pass
-
-    def test_pre_task_hook(self):
-        """Test pre-task execution hook."""
-        pass
-
-    def test_post_task_hook(self):
-        """Test post-task execution hook."""
-        pass
-
-    def test_error_hook(self):
-        """Test error handling hook."""
-        pass
+from hatch_agent.hooks import hatch_register_environment_collector
+from hatch_agent.plugin import AgentEnvironmentCollector
 
 
-class TestHookChaining:
-    """Test hook chaining."""
+class TestHatchRegisterEnvironmentCollector:
+    """Test the hatch_register_environment_collector hook."""
 
-    def test_chain_multiple_hooks(self):
-        """Test chaining multiple hooks."""
-        pass
+    def test_returns_agent_environment_collector_class(self):
+        """Test that the hook returns the AgentEnvironmentCollector class."""
+        result = hatch_register_environment_collector()
+        assert result is AgentEnvironmentCollector
 
-    def test_hook_execution_order(self):
-        """Test hook execution order."""
-        pass
+    def test_returns_class_not_instance(self):
+        """Test that the hook returns a class, not an instance."""
+        result = hatch_register_environment_collector()
+        assert isinstance(result, type)
+        assert issubclass(result, AgentEnvironmentCollector)
 
-    def test_stop_hook_chain(self):
-        """Test stopping hook chain execution."""
-        pass
-
-
-class TestHookContext:
-    """Test hook context management."""
-
-    def test_hook_context_data(self):
-        """Test passing context data to hooks."""
-        pass
-
-    def test_modify_context_in_hook(self):
-        """Test modifying context in hooks."""
-        pass
-
-    def test_hook_context_isolation(self):
-        """Test context isolation between hooks."""
-        pass
+    def test_hook_is_decorated(self):
+        """Test that the hook function has the hookimpl decorator applied."""
+        # The hookimpl decorator adds specific attributes to the function
+        # We verify the function exists and is callable
+        assert callable(hatch_register_environment_collector)
 

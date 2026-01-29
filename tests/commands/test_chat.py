@@ -1,8 +1,107 @@
 """Tests for chat command."""
 
 from unittest.mock import MagicMock, Mock, patch
+from click.testing import CliRunner
+import sys
+import importlib
 
 import pytest
+
+# Import the actual module (not the command) using importlib
+chat_module = importlib.import_module('hatch_agent.commands.chat')
+chat = chat_module.chat
+
+
+class TestChatCLI:
+    """Test chat CLI command."""
+
+    @pytest.fixture
+    def cli_runner(self):
+        """Create a Click CLI runner."""
+        return CliRunner()
+
+    def test_chat_exit_immediately(self, cli_runner):
+        """Test exiting chat with 'exit' command."""
+        with patch.object(chat_module, 'load_config') as mock_load_config, \
+             patch.object(chat_module, 'Agent') as mock_agent_class:
+            mock_load_config.return_value = {}
+            mock_agent = MagicMock()
+            mock_agent_class.return_value = mock_agent
+            
+            result = cli_runner.invoke(chat, input="exit\n")
+            
+            assert result.exit_code == 0
+            assert "Goodbye" in result.output
+
+    def test_chat_quit_command(self, cli_runner):
+        """Test exiting chat with 'quit' command."""
+        with patch.object(chat_module, 'load_config') as mock_load_config, \
+             patch.object(chat_module, 'Agent') as mock_agent_class:
+            mock_load_config.return_value = {}
+            mock_agent = MagicMock()
+            mock_agent_class.return_value = mock_agent
+            
+            result = cli_runner.invoke(chat, input="quit\n")
+            
+            assert "Goodbye" in result.output
+
+    def test_chat_q_command(self, cli_runner):
+        """Test exiting chat with 'q' command."""
+        with patch.object(chat_module, 'load_config') as mock_load_config, \
+             patch.object(chat_module, 'Agent') as mock_agent_class:
+            mock_load_config.return_value = {}
+            mock_agent = MagicMock()
+            mock_agent_class.return_value = mock_agent
+            
+            result = cli_runner.invoke(chat, input="q\n")
+            
+            assert "Goodbye" in result.output
+
+    def test_chat_multi_agent_mode(self, cli_runner):
+        """Test chat uses multi-agent mode by default."""
+        with patch.object(chat_module, 'load_config') as mock_load_config, \
+             patch.object(chat_module, 'Agent') as mock_agent_class:
+            mock_load_config.return_value = {}
+            mock_agent = MagicMock()
+            mock_agent.run_task.return_value = {
+                "success": True,
+                "selected_suggestion": "Response",
+                "selected_agent": "Agent1"
+            }
+            mock_agent_class.return_value = mock_agent
+            
+            result = cli_runner.invoke(chat, input="test question\nexit\n")
+            
+            mock_agent_class.assert_called_once()
+            call_kwargs = mock_agent_class.call_args[1]
+            assert call_kwargs["use_multi_agent"] is True
+
+    def test_chat_single_agent_mode(self, cli_runner):
+        """Test chat with --single-agent flag."""
+        with patch.object(chat_module, 'load_config') as mock_load_config, \
+             patch.object(chat_module, 'Agent') as mock_agent_class:
+            mock_load_config.return_value = {}
+            mock_agent = MagicMock()
+            mock_agent.chat.return_value = "Response"
+            mock_agent_class.return_value = mock_agent
+            
+            result = cli_runner.invoke(chat, ["--single-agent"], input="test\nexit\n")
+            
+            call_kwargs = mock_agent_class.call_args[1]
+            assert call_kwargs["use_multi_agent"] is False
+
+    def test_chat_displays_welcome(self, cli_runner):
+        """Test chat displays welcome message."""
+        with patch.object(chat_module, 'load_config') as mock_load_config, \
+             patch.object(chat_module, 'Agent') as mock_agent_class:
+            mock_load_config.return_value = {"model": "gpt-4"}
+            mock_agent = MagicMock()
+            mock_agent_class.return_value = mock_agent
+            
+            result = cli_runner.invoke(chat, input="exit\n")
+            
+            assert "Hatch-Agent" in result.output
+            assert "Interactive Chat" in result.output
 
 
 class TestChatCommand:
@@ -10,7 +109,6 @@ class TestChatCommand:
 
     def test_start_chat_session(self, mock_llm_provider):
         """Test starting a chat session."""
-        # Would test chat command from chat.py
         mock_llm_provider.chat.return_value = "Hello! How can I help you?"
         response = mock_llm_provider.chat("Hello")
         assert "help" in response.lower()
@@ -21,55 +119,11 @@ class TestChatCommand:
         response = mock_llm_provider.chat("What am I working on?")
         assert "Python" in response
 
-    def test_chat_history_management(self, mock_llm_provider):
-        """Test managing chat history."""
-        pass
-
-    def test_exit_chat_session(self):
-        """Test exiting chat session."""
-        pass
-
-
-class TestChatInteraction:
-    """Test chat interaction features."""
-
-    def test_multiline_input(self, mock_llm_provider):
-        """Test handling multiline input."""
-        pass
-
     def test_code_block_formatting(self, mock_llm_provider):
         """Test formatting code blocks in responses."""
         mock_llm_provider.chat.return_value = "```python\nprint('hello')\n```"
         response = mock_llm_provider.chat("Show me code")
         assert "```python" in response
-
-    def test_command_execution(self, mock_llm_provider):
-        """Test executing commands from chat."""
-        pass
-
-    def test_file_references(self, mock_llm_provider):
-        """Test handling file references in chat."""
-        pass
-
-
-class TestChatCommands:
-    """Test special chat commands."""
-
-    def test_help_command(self):
-        """Test /help command."""
-        pass
-
-    def test_clear_command(self):
-        """Test /clear command to clear history."""
-        pass
-
-    def test_save_command(self):
-        """Test /save command to save conversation."""
-        pass
-
-    def test_load_command(self):
-        """Test /load command to load conversation."""
-        pass
 
 
 class TestChatWithLLM:

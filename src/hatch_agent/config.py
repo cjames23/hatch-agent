@@ -34,6 +34,57 @@ DEFAULT_CONFIG = {
     },
 }
 
+# Provider-specific configuration templates for the config wizard
+PROVIDER_TEMPLATES: Dict[str, Any] = {
+    "openai": {
+        "underlying_provider": "openai",
+        "model": "gpt-4",
+        "underlying_config": {
+            "api_key": "",
+        },
+    },
+    "anthropic": {
+        "underlying_provider": "anthropic",
+        "model": "claude-3-sonnet-20240229",
+        "underlying_config": {
+            "api_key": "",
+        },
+    },
+    "bedrock": {
+        "underlying_provider": "bedrock",
+        "model": "anthropic.claude-3-sonnet-20240229-v1:0",
+        "underlying_config": {
+            "aws_access_key_id": "",
+            "aws_secret_access_key": "",
+            "region": "us-east-1",
+        },
+    },
+    "azure": {
+        "underlying_provider": "azure",
+        "model": "gpt-4",
+        "underlying_config": {
+            "api_key": "",
+            "api_base": "",
+            "deployment": "",
+        },
+    },
+    "google": {
+        "underlying_provider": "google",
+        "model": "gemini-pro",
+        "underlying_config": {
+            "project_id": "",
+            "location": "us-central1",
+        },
+    },
+    "cohere": {
+        "underlying_provider": "cohere",
+        "model": "command",
+        "underlying_config": {
+            "api_key": "",
+        },
+    },
+}
+
 
 def get_config_dir() -> str:
     xdg = os.environ.get("XDG_CONFIG_HOME")

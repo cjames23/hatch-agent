@@ -7,7 +7,9 @@ from hatch_agent.commands.explain import explain
 from hatch_agent.commands.add_dependency import add_dep
 from hatch_agent.commands.update_dependency import update_dep
 from hatch_agent.commands.multi_task import multi_task
-from hatch_agent.commands.sync import sync
+# Note: sync is intentionally not re-exported here to avoid shadowing the
+# hatch_agent.commands.sync module name. Import it directly:
+# from hatch_agent.commands.sync import sync
 
 __all__ = [
     "chat",
@@ -17,5 +19,4 @@ __all__ = [
     "add_dep",
     "update_dep",
     "multi_task",
-    "sync"
 ]

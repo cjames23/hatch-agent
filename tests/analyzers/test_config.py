@@ -5,14 +5,62 @@ from pathlib import Path
 
 import pytest
 
+from hatch_agent.analyzers.config import analyze_config
+
+
+class TestAnalyzeConfig:
+    """Test the analyze_config function."""
+
+    def test_analyze_config_exists(self, temp_project_dir):
+        """Test analyzing an existing config file."""
+        config_file = temp_project_dir / "config.toml"
+        config_file.write_text("[settings]\nkey = 'value'")
+
+        result = analyze_config(str(config_file))
+
+        assert result["exists"] is True
+        assert result["path"] == str(config_file)
+        assert "size" in result
+        assert result["size"] > 0
+
+    def test_analyze_config_not_exists(self, temp_project_dir):
+        """Test analyzing a non-existent config file."""
+        result = analyze_config(str(temp_project_dir / "nonexistent.toml"))
+
+        assert result["exists"] is False
+        assert "nonexistent.toml" in result["path"]
+        assert "size" not in result
+
+    def test_analyze_config_empty_file(self, temp_project_dir):
+        """Test analyzing an empty config file."""
+        config_file = temp_project_dir / "empty.toml"
+        config_file.write_text("")
+
+        result = analyze_config(str(config_file))
+
+        assert result["exists"] is True
+        assert result["size"] == 0
+
+    def test_analyze_config_returns_correct_size(self, temp_project_dir):
+        """Test that analyze_config returns correct file size."""
+        content = "a" * 100  # 100 bytes
+        config_file = temp_project_dir / "sized.toml"
+        config_file.write_text(content)
+
+        result = analyze_config(str(config_file))
+
+        assert result["size"] == 100
+
 
 class TestConfigAnalyzer:
     """Test configuration analyzer."""
 
     def test_load_config(self, sample_pyproject_toml):
         """Test loading configuration from pyproject.toml."""
-        # Would test config loading from config.py
         assert sample_pyproject_toml.exists()
+
+        result = analyze_config(str(sample_pyproject_toml))
+        assert result["exists"] is True
 
     def test_parse_toml_config(self, sample_pyproject_toml):
         """Test parsing TOML configuration."""
