@@ -32,9 +32,8 @@ dependencies = [
   "pydantic>=1.8.2",
   "tomli>=2.0.1; python_version < '3.11'",
   "tomli-w>=0.5.0",
-  "strands-agents",
   "click>=8.0.0",
-  "hatch"
+  "strands-agents>=1.0.0",
 ]
 
 [project.urls]
@@ -55,7 +54,6 @@ Tracker = "https://github.com/hawkinscary/hatch-agent/issues"
 agent = "hatch_agent.hooks"
 
 [project.optional-dependencies]
-native = ["strands"]
 dev = ["pytest>=7.0.0", "pytest-cov>=3.0.0"]
 
 [tool.hatch.build.targets.wheel]
@@ -68,6 +66,14 @@ python = "3.10"
 template = "default"
 features = ["dev"]
 description = "Developer environment: installs dev extras (pytest, etc.)"
+
+[tool.hatch.envs.hatch-test]
+extra-dependencies = [
+  "pytest-cov>=3.0.0",
+]
+
+[[tool.hatch.envs.hatch-test.matrix]]
+python = ["3.10", "3.11", "3.12"]
 
 [tool.pytest.ini_options]
 

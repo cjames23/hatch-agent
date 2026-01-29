@@ -22,7 +22,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.10", "3.11", "3.12"]
 
     steps:
       - uses: actions/checkout@v4
@@ -32,39 +32,16 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v3
-
-      - name: Install dependencies
-        run: |
-          uv pip install --system -e ".[dev]"
+      - name: Install Hatch
+        uses: pypa/hatch@install
 
       - name: Run tests with coverage
-        run: pytest --cov=src/hatch_agent --cov-report=xml -v
-
-      - name: Upload coverage
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-${{ matrix.os }}-${{ matrix.python-version }}
-          path: coverage.xml
-
-  coverage:
-    name: Coverage Report
-    runs-on: ubuntu-latest
-    needs: test
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Download coverage artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: coverage-*
-          merge-multiple: true
+        run: hatch test --cover --python ${{ matrix.python-version }}
 
   check:
     name: All tests passed
     if: always()
-    needs: [test, coverage]
+    needs: [test]
     runs-on: ubuntu-latest
     steps:
       - uses: re-actors/alls-green@release/v1
