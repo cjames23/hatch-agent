@@ -26,7 +26,7 @@ class TestReadFileTool:
     def test_read_file_with_unicode(self, temp_project_dir):
         """Test reading a file with unicode content."""
         test_file = temp_project_dir / "unicode.txt"
-        test_file.write_text("Hello 世界 🎉")
+        test_file.write_text("Hello 世界 🎉", encoding="utf-8")
 
         result = read_file(str(test_file))
         assert result["success"] is True
