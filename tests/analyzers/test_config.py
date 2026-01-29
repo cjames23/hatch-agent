@@ -1,10 +1,5 @@
 """Tests for configuration analysis."""
 
-from unittest.mock import MagicMock, patch
-from pathlib import Path
-
-import pytest
-
 from hatch_agent.analyzers.config import analyze_config
 
 
@@ -133,4 +128,3 @@ class TestConfigMerging:
     def test_inherit_config(self):
         """Test configuration inheritance."""
         pass
-

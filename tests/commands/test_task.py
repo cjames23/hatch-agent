@@ -1,9 +1,9 @@
 """Tests for task command."""
 
-from unittest.mock import MagicMock, Mock, patch
-from click.testing import CliRunner
+from unittest.mock import MagicMock, patch
 
 import pytest
+from click.testing import CliRunner
 
 from hatch_agent.commands.task import run_task
 
@@ -26,16 +26,16 @@ class TestRunTaskCommand:
             mock_result.exit_code = 0
             mock_inner_runner.invoke.return_value = mock_result
             mock_runner_class.return_value = mock_inner_runner
-            
+
             result = cli_runner.invoke(run_task, ["test", "task"])
-            
+
             assert result.exit_code == 0
 
     def test_run_task_with_config(self, cli_runner, temp_project_dir):
         """Test task with config option."""
         config_file = temp_project_dir / "config.toml"
         config_file.write_text("[agent]\nname = 'test'")
-        
+
         with patch("click.testing.CliRunner") as mock_runner_class:
             mock_inner_runner = MagicMock()
             mock_result = MagicMock()
@@ -43,11 +43,9 @@ class TestRunTaskCommand:
             mock_result.exit_code = 0
             mock_inner_runner.invoke.return_value = mock_result
             mock_runner_class.return_value = mock_inner_runner
-            
-            result = cli_runner.invoke(
-                run_task, ["task", "--config", str(config_file)]
-            )
-            
+
+            cli_runner.invoke(run_task, ["task", "--config", str(config_file)])
+
             # Should pass config to inner command
             call_args = mock_inner_runner.invoke.call_args[0][1]
             assert "--config" in call_args
@@ -61,11 +59,9 @@ class TestRunTaskCommand:
             mock_result.exit_code = 0
             mock_inner_runner.invoke.return_value = mock_result
             mock_runner_class.return_value = mock_inner_runner
-            
-            result = cli_runner.invoke(
-                run_task, ["task", "--name", "my-agent"]
-            )
-            
+
+            cli_runner.invoke(run_task, ["task", "--name", "my-agent"])
+
             call_args = mock_inner_runner.invoke.call_args[0][1]
             assert "--name" in call_args
             assert "my-agent" in call_args
@@ -96,4 +92,3 @@ class TestTaskCommand:
         mock_llm_provider.generate.return_value = "Task verification: PASSED"
         verification = mock_llm_provider.generate("Verify task")
         assert "PASSED" in verification
-

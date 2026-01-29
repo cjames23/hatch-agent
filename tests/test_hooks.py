@@ -1,9 +1,5 @@
 """Tests for hooks system."""
 
-from unittest.mock import MagicMock, Mock
-
-import pytest
-
 from hatch_agent.hooks import hatch_register_environment_collector
 from hatch_agent.plugin import AgentEnvironmentCollector
 
@@ -27,4 +23,3 @@ class TestHatchRegisterEnvironmentCollector:
         # The hookimpl decorator adds specific attributes to the function
         # We verify the function exists and is callable
         assert callable(hatch_register_environment_collector)
-

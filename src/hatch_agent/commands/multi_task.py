@@ -1,24 +1,23 @@
 """Multi-agent task execution command using Click."""
 
-import click
 from pathlib import Path
+
+import click
 
 from hatch_agent.agent.core import Agent
 from hatch_agent.config import load_config
 
 
 @click.command()
-@click.argument('task', nargs=-1, required=True)
+@click.argument("task", nargs=-1, required=True)
 @click.option(
-    '--config',
+    "--config",
     type=click.Path(exists=True, file_okay=True, dir_okay=False, path_type=Path),
     default=None,
-    help='Path to agent configuration file'
+    help="Path to agent configuration file",
 )
 @click.option(
-    '--show-all',
-    is_flag=True,
-    help='Show all agent suggestions, not just the selected one'
+    "--show-all", is_flag=True, help="Show all agent suggestions, not just the selected one"
 )
 def multi_task(task: tuple, config: Path, show_all: bool):
     """Run a task using multi-agent orchestration.
@@ -57,7 +56,7 @@ def multi_task(task: tuple, config: Path, show_all: bool):
         name="hatch-multi-agent",
         use_multi_agent=True,
         provider_name=provider,
-        provider_config=provider_cfg
+        provider_config=provider_cfg,
     )
 
     result = agent.run_task(task_description)
@@ -90,6 +89,7 @@ def multi_task(task: tuple, config: Path, show_all: bool):
             click.echo(click.style(f"   Confidence: {suggestion['confidence']:.2f}", fg="yellow"))
             click.echo(f"   Suggestion: {suggestion['suggestion']}")
             click.echo(f"   Reasoning: {suggestion['reasoning']}")
+
 
 if __name__ == "__main__":
     multi_task()

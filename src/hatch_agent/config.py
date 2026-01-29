@@ -6,8 +6,9 @@ $XDG_CONFIG_HOME/hatch-agent/config.toml or ~/.config/hatch-agent/config.toml
 The configuration is stored in TOML format and describes which provider
 and model to use for LLM calls as well as provider-specific credentials.
 """
-from typing import Dict, Any
+
 import os
+from typing import Any
 
 # Prefer stdlib tomllib (py3.11+) then tomli; tomli_w for writing when available
 try:
@@ -35,7 +36,7 @@ DEFAULT_CONFIG = {
 }
 
 # Provider-specific configuration templates for the config wizard
-PROVIDER_TEMPLATES: Dict[str, Any] = {
+PROVIDER_TEMPLATES: dict[str, Any] = {
     "openai": {
         "underlying_provider": "openai",
         "model": "gpt-4",
@@ -97,7 +98,7 @@ def get_config_path() -> str:
     return os.path.join(get_config_dir(), "config.toml")
 
 
-def load_config(path: str | None = None) -> Dict[str, Any]:
+def load_config(path: str | None = None) -> dict[str, Any]:
     path = path or get_config_path()
     try:
         with open(path, "rb") as f:
@@ -108,14 +109,14 @@ def load_config(path: str | None = None) -> Dict[str, Any]:
         return DEFAULT_CONFIG.copy()
 
 
-def _simple_toml_dumps(obj: Dict[str, Any]) -> str:
+def _simple_toml_dumps(obj: dict[str, Any]) -> str:
     """A tiny TOML serializer sufficient for DEFAULT_CONFIG-like dicts.
 
     This is intentionally minimal and not a full TOML implementation.
     """
     lines = []
 
-    def emit_section(prefix: str, mapping: Dict[str, Any]):
+    def emit_section(prefix: str, mapping: dict[str, Any]):
         for k, v in mapping.items():
             if isinstance(v, dict):
                 # nested table
@@ -123,7 +124,7 @@ def _simple_toml_dumps(obj: Dict[str, Any]) -> str:
                 lines.append(section)
                 for kk, vv in v.items():
                     if isinstance(vv, str):
-                        lines.append(f"{kk} = \"{vv}\"")
+                        lines.append(f'{kk} = "{vv}"')
                     elif isinstance(vv, bool):
                         lines.append(f"{kk} = {str(vv).lower()}")
                     else:
@@ -131,11 +132,11 @@ def _simple_toml_dumps(obj: Dict[str, Any]) -> str:
                 lines.append("")
             else:
                 if isinstance(v, str):
-                    lines.append(f"{k} = \"{v}\"")
+                    lines.append(f'{k} = "{v}"')
                 elif isinstance(v, bool):
                     lines.append(f"{k} = {str(v).lower()}")
                 elif isinstance(v, list):
-                    items = ", ".join(f'\"{x}\"' for x in v)
+                    items = ", ".join(f'"{x}"' for x in v)
                     lines.append(f"{k} = [{items}]")
                 else:
                     lines.append(f"{k} = {v}")
@@ -149,7 +150,7 @@ def _simple_toml_dumps(obj: Dict[str, Any]) -> str:
             lines.append(f"[{k}]")
             for kk, vv in v.items():
                 if isinstance(vv, str):
-                    lines.append(f"{kk} = \"{vv}\"")
+                    lines.append(f'{kk} = "{vv}"')
                 elif isinstance(vv, bool):
                     lines.append(f"{kk} = {str(vv).lower()}")
                 else:
@@ -159,7 +160,7 @@ def _simple_toml_dumps(obj: Dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def write_config(config: Dict[str, Any], path: str | None = None) -> bool:
+def write_config(config: dict[str, Any], path: str | None = None) -> bool:
     path = path or get_config_path()
     d = os.path.dirname(path)
     os.makedirs(d, exist_ok=True)

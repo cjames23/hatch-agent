@@ -1,8 +1,5 @@
 """Integration tests for the entire hatch-agent system."""
 
-from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
-
 import pytest
 
 
@@ -39,8 +36,7 @@ class TestLLMIntegration:
     def test_openai_integration(self, mock_openai_client):
         """Test OpenAI integration without actual API calls."""
         response = mock_openai_client.chat.completions.create(
-            model="gpt-4",
-            messages=[{"role": "user", "content": "Analyze this project"}]
+            model="gpt-4", messages=[{"role": "user", "content": "Analyze this project"}]
         )
         assert response.choices[0].message.content
 
@@ -49,7 +45,7 @@ class TestLLMIntegration:
         response = mock_anthropic_client.messages.create(
             model="claude-3-opus-20240229",
             max_tokens=1024,
-            messages=[{"role": "user", "content": "Analyze this project"}]
+            messages=[{"role": "user", "content": "Analyze this project"}],
         )
         assert response.content[0].text
 
@@ -59,12 +55,9 @@ class TestLLMIntegration:
 
     def test_llm_error_recovery(self, mock_llm_provider):
         """Test recovering from LLM errors."""
-        mock_llm_provider.generate.side_effect = [
-            Exception("API Error"),
-            "Retry successful"
-        ]
+        mock_llm_provider.generate.side_effect = [RuntimeError("API Error"), "Retry successful"]
 
-        with pytest.raises(Exception):
+        with pytest.raises(RuntimeError, match="API Error"):
             mock_llm_provider.generate("Task")
 
         result = mock_llm_provider.generate("Task")
@@ -88,8 +81,8 @@ class TestFileSystemIntegration:
 
     def test_lockfile_operations(self, temp_project_dir, sample_lockfile_content):
         """Test lockfile read/write operations."""
+
         from hatch_agent.generators.lockfile import read_lockfile, write_lockfile
-        import json
 
         lockfile_path = temp_project_dir / "hatch.lock"
         write_lockfile(str(lockfile_path), sample_lockfile_content)
@@ -101,7 +94,7 @@ class TestFileSystemIntegration:
         """Test configuration file operations."""
         assert sample_pyproject_toml.exists()
         content = sample_pyproject_toml.read_text()
-        assert "name = \"test-project\"" in content
+        assert 'name = "test-project"' in content
 
 
 @pytest.mark.integration
@@ -167,4 +160,3 @@ class TestErrorRecovery:
     def test_rollback_on_failure(self):
         """Test rollback on operation failure."""
         pass
-

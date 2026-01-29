@@ -1,44 +1,44 @@
 """CLI command for adding dependencies using natural language and multi-agent AI."""
 
-import click
-from pathlib import Path
 import json
+from pathlib import Path
+
+import click
 
 from hatch_agent.agent.core import Agent
-from hatch_agent.config import load_config
 from hatch_agent.analyzers.dependency import DependencyManager
+from hatch_agent.config import load_config
 
 
 @click.command()
-@click.argument('description', nargs=-1, required=True)
+@click.argument("description", nargs=-1, required=True)
 @click.option(
-    '--project-root',
+    "--project-root",
     type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path),
     default=None,
-    help='Root directory of the Hatch project (defaults to current directory)'
+    help="Root directory of the Hatch project (defaults to current directory)",
 )
 @click.option(
-    '--config',
+    "--config",
     type=click.Path(exists=True, file_okay=True, dir_okay=False, path_type=Path),
     default=None,
-    help='Path to agent configuration file'
+    help="Path to agent configuration file",
+)
+@click.option("--dry-run", is_flag=True, help="Show what would be done without making changes")
+@click.option(
+    "--show-all", is_flag=True, help="Show all agent suggestions, not just the selected one"
 )
 @click.option(
-    '--dry-run',
-    is_flag=True,
-    help='Show what would be done without making changes'
+    "--skip-sync", is_flag=True, help="Skip syncing Hatch environment after adding dependency"
 )
-@click.option(
-    '--show-all',
-    is_flag=True,
-    help='Show all agent suggestions, not just the selected one'
-)
-@click.option(
-    '--skip-sync',
-    is_flag=True,
-    help='Skip syncing Hatch environment after adding dependency'
-)
-def add_dep(description: tuple, project_root: Path, config: Path, dry_run: bool, show_all: bool, skip_sync: bool):
+def add_dep(
+    description: tuple,
+    project_root: Path,
+    config: Path,
+    dry_run: bool,
+    show_all: bool,
+    skip_sync: bool,
+):
     """Add a dependency to your Hatch project using natural language.
 
     Examples:
@@ -63,7 +63,7 @@ def add_dep(description: tuple, project_root: Path, config: Path, dry_run: bool,
     context = {
         "project_root": str(project_root or Path.cwd()),
         "current_dependencies": current_deps,
-        "user_request": user_request
+        "user_request": user_request,
     }
 
     # Construct task for agents
@@ -87,7 +87,7 @@ def add_dep(description: tuple, project_root: Path, config: Path, dry_run: bool,
         name="dependency-manager",
         use_multi_agent=True,
         provider_name=provider,
-        provider_config=provider_cfg
+        provider_config=provider_cfg,
     )
 
     # Add context to agent
@@ -138,9 +138,9 @@ def add_dep(description: tuple, project_root: Path, config: Path, dry_run: bool,
     # Show what will be done
     click.echo(click.style("📝 Proposed changes:", fg="green", bold=True))
     click.echo(f"  Package: {dependency_info['package']}")
-    if dependency_info.get('version'):
+    if dependency_info.get("version"):
         click.echo(f"  Version: {dependency_info['version']}")
-    if dependency_info.get('group'):
+    if dependency_info.get("group"):
         click.echo(f"  Group: {dependency_info['group']}")
     click.echo()
 
@@ -158,16 +158,20 @@ def add_dep(description: tuple, project_root: Path, config: Path, dry_run: bool,
     click.echo("✏️  Modifying pyproject.toml...")
 
     add_result = dep_manager.add_dependency(
-        package=dependency_info['package'],
-        version_spec=dependency_info.get('version'),
-        optional_group=dependency_info.get('group')
+        package=dependency_info["package"],
+        version_spec=dependency_info.get("version"),
+        optional_group=dependency_info.get("group"),
     )
 
     if not add_result.get("success"):
         click.echo(click.style(f"❌ Failed to add dependency: {add_result.get('error')}", fg="red"))
         raise click.Abort()
 
-    click.echo(click.style(f"✅ Added '{add_result['dependency_string']}' to {add_result['target']}", fg="green"))
+    click.echo(
+        click.style(
+            f"✅ Added '{add_result['dependency_string']}' to {add_result['target']}", fg="green"
+        )
+    )
 
     # Sync environment
     if not skip_sync:
@@ -179,7 +183,12 @@ def add_dep(description: tuple, project_root: Path, config: Path, dry_run: bool,
         if sync_result.get("success"):
             click.echo(click.style("✅ Environment synced successfully", fg="green"))
         else:
-            click.echo(click.style(f"⚠️  Environment sync had issues: {sync_result.get('error', 'Unknown error')}", fg="yellow"))
+            click.echo(
+                click.style(
+                    f"⚠️  Environment sync had issues: {sync_result.get('error', 'Unknown error')}",
+                    fg="yellow",
+                )
+            )
             click.echo("You may need to run 'hatch env create' manually.")
     else:
         click.echo()
@@ -194,14 +203,14 @@ def _build_dependency_task(user_request: str, current_deps: dict) -> str:
     """Build the task description for agents."""
     deps_summary = {
         "main_count": len(current_deps.get("main", [])),
-        "optional_groups": list(current_deps.get("optional", {}).keys())
+        "optional_groups": list(current_deps.get("optional", {}).keys()),
     }
 
     return f"""User wants to add a dependency with this request: "{user_request}"
 
 Current project state:
-- Main dependencies: {deps_summary['main_count']} packages
-- Optional dependency groups: {deps_summary['optional_groups']}
+- Main dependencies: {deps_summary["main_count"]} packages
+- Optional dependency groups: {deps_summary["optional_groups"]}
 
 Your task:
 1. Determine the exact package name to add
@@ -264,4 +273,3 @@ def _extract_dependency_info(suggestion: str) -> dict:
 
 if __name__ == "__main__":
     add_dep()
-

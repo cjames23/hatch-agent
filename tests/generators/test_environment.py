@@ -1,10 +1,5 @@
 """Tests for environment generation."""
 
-from unittest.mock import MagicMock, patch
-from pathlib import Path
-
-import pytest
-
 
 class TestGenerateEnvironment:
     """Test cases for generate_environment function."""
@@ -23,8 +18,9 @@ class TestGenerateEnvironment:
 
     def test_generate_environment_with_metadata(self, temp_project_dir):
         """Test environment generation with full metadata."""
-        from hatch_agent.generators.environment import generate_environment
         import json
+
+        from hatch_agent.generators.environment import generate_environment
 
         metadata = {
             "name": "test-project",
@@ -53,7 +49,9 @@ class TestGenerateEnvironment:
         """Test environment generation with invalid path."""
         from hatch_agent.generators.environment import generate_environment
 
-        result = generate_environment({"test": "data"}, "/invalid/path/that/does/not/exist/env.json")
+        result = generate_environment(
+            {"test": "data"}, "/invalid/path/that/does/not/exist/env.json"
+        )
         assert result is False
 
     def test_generate_environment_creates_file(self, temp_project_dir):

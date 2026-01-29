@@ -1,19 +1,16 @@
 """Tests for configuration system."""
 
-from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
 import os
-
-import pytest
+from unittest.mock import patch
 
 from hatch_agent.config import (
+    DEFAULT_CONFIG,
+    PROVIDER_TEMPLATES,
+    _simple_toml_dumps,
     get_config_dir,
     get_config_path,
     load_config,
     write_config,
-    _simple_toml_dumps,
-    DEFAULT_CONFIG,
-    PROVIDER_TEMPLATES,
 )
 
 
@@ -75,7 +72,7 @@ api_key = "test-key"
         config_file = config_dir / "hatch-agent" / "config.toml"
         config_file.parent.mkdir(parents=True)
         config_file.write_text('provider = "test"')
-        
+
         monkeypatch.setenv("XDG_CONFIG_HOME", str(config_dir))
         result = load_config()
         assert result["provider"] == "test"
@@ -88,9 +85,9 @@ class TestWriteConfig:
         """Test writing config to file."""
         config_file = temp_project_dir / "subdir" / "config.toml"
         config = {"provider": "openai", "model": "gpt-4"}
-        
+
         result = write_config(config, str(config_file))
-        
+
         assert result is True
         assert config_file.exists()
 
@@ -98,19 +95,21 @@ class TestWriteConfig:
         """Test that write_config creates parent directories."""
         deep_path = temp_project_dir / "a" / "b" / "c" / "config.toml"
         config = {"test": "value"}
-        
+
         result = write_config(config, str(deep_path))
-        
+
         assert result is True
         assert deep_path.exists()
 
     def test_write_config_failure(self, temp_project_dir):
         """Test write_config returns False on failure."""
         # Try to write to a path that will fail (directory instead of file)
-        with patch("builtins.open", side_effect=PermissionError("No permission")):
-            with patch("os.makedirs"):  # Don't fail on makedirs
-                result = write_config({}, str(temp_project_dir / "test.toml"))
-        
+        with (
+            patch("builtins.open", side_effect=PermissionError("No permission")),
+            patch("os.makedirs"),  # Don't fail on makedirs
+        ):
+            result = write_config({}, str(temp_project_dir / "test.toml"))
+
         assert result is False
 
 
@@ -145,26 +144,14 @@ class TestSimpleTomlDumps:
 
     def test_nested_dict(self):
         """Test serializing nested dictionaries."""
-        config = {
-            "top": "value",
-            "nested": {
-                "key1": "val1",
-                "key2": "val2"
-            }
-        }
+        config = {"top": "value", "nested": {"key1": "val1", "key2": "val2"}}
         result = _simple_toml_dumps(config)
         assert "[nested]" in result
         assert 'key1 = "val1"' in result
 
     def test_deeply_nested_dict(self):
         """Test serializing deeply nested structure."""
-        config = {
-            "providers": {
-                "openai": {
-                    "api_key": "secret"
-                }
-            }
-        }
+        config = {"providers": {"openai": {"api_key": "secret"}}}
         result = _simple_toml_dumps(config)
         assert "[providers]" in result
 
@@ -230,12 +217,7 @@ class TestSimpleTomlDumpsExtended:
 
     def test_nested_dict_with_boolean(self):
         """Test nested dict with boolean values."""
-        config = {
-            "section": {
-                "enabled": True,
-                "disabled": False
-            }
-        }
+        config = {"section": {"enabled": True, "disabled": False}}
         result = _simple_toml_dumps(config)
         assert "[section]" in result
         assert "enabled = true" in result
@@ -243,12 +225,7 @@ class TestSimpleTomlDumpsExtended:
 
     def test_nested_dict_with_integer(self):
         """Test nested dict with integer values."""
-        config = {
-            "settings": {
-                "timeout": 30,
-                "retries": 3
-            }
-        }
+        config = {"settings": {"timeout": 30, "retries": 3}}
         result = _simple_toml_dumps(config)
         assert "[settings]" in result
         assert "timeout = 30" in result
@@ -262,12 +239,7 @@ class TestSimpleTomlDumpsExtended:
 
     def test_mixed_top_level(self):
         """Test mixed top-level values."""
-        config = {
-            "name": "project",
-            "count": 5,
-            "enabled": True,
-            "tags": ["a", "b"]
-        }
+        config = {"name": "project", "count": 5, "enabled": True, "tags": ["a", "b"]}
         result = _simple_toml_dumps(config)
         assert 'name = "project"' in result
         assert "count = 5" in result
@@ -281,21 +253,20 @@ class TestWriteConfigFallback:
     def test_write_config_with_fallback(self, temp_project_dir):
         """Test write_config uses fallback when tomli_w not available."""
         import hatch_agent.config as config_module
-        
+
         # Temporarily set the writer to None to trigger fallback
         original_writer = config_module._toml_writer
         config_module._toml_writer = None
-        
+
         try:
             config_file = temp_project_dir / "fallback.toml"
             config = {"provider": "test", "model": "gpt-4"}
-            
+
             result = write_config(config, str(config_file))
-            
+
             assert result is True
             assert config_file.exists()
             content = config_file.read_text()
             assert 'provider = "test"' in content
         finally:
             config_module._toml_writer = original_writer
-

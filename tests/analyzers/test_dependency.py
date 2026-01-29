@@ -1,7 +1,7 @@
 """Tests for individual dependency analysis."""
 
-from unittest.mock import MagicMock, Mock, patch
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -13,10 +13,10 @@ class TestDependencyManagerInit:
 
     def test_init_default_values(self):
         """Test initialization with default values."""
-        with patch.object(Path, 'cwd', return_value=Path('/test/project')):
+        with patch.object(Path, "cwd", return_value=Path("/test/project")):
             manager = DependencyManager()
-            assert manager.project_root == Path('/test/project')
-            assert manager.pyproject_path == Path('/test/project/pyproject.toml')
+            assert manager.project_root == Path("/test/project")
+            assert manager.pyproject_path == Path("/test/project/pyproject.toml")
             assert manager.app is None
 
     def test_init_with_project_root(self, temp_project_dir):
@@ -45,26 +45,26 @@ dependencies = ["requests>=2.0"]
 """)
         manager = DependencyManager(project_root=temp_project_dir)
         config = manager.read_pyproject()
-        
+
         assert config["project"]["name"] == "test-project"
         assert "requests>=2.0" in config["project"]["dependencies"]
 
     def test_read_pyproject_not_found(self, temp_project_dir):
         """Test reading non-existent pyproject.toml."""
         manager = DependencyManager(project_root=temp_project_dir)
-        
+
         with pytest.raises(FileNotFoundError):
             manager.read_pyproject()
 
     def test_write_pyproject(self, temp_project_dir):
         """Test writing pyproject.toml."""
         pyproject = temp_project_dir / "pyproject.toml"
-        pyproject.write_text("[project]\nname = \"old\"")
-        
+        pyproject.write_text('[project]\nname = "old"')
+
         manager = DependencyManager(project_root=temp_project_dir)
         config = {"project": {"name": "new", "dependencies": ["click"]}}
         manager.write_pyproject(config)
-        
+
         # Verify written content
         new_config = manager.read_pyproject()
         assert new_config["project"]["name"] == "new"
@@ -83,7 +83,7 @@ dependencies = []
 """)
         manager = DependencyManager(project_root=temp_project_dir)
         result = manager.add_dependency("requests", ">=2.28.0")
-        
+
         assert result["success"] is True
         assert result["action"] == "added"
         assert result["target"] == "project.dependencies"
@@ -91,11 +91,11 @@ dependencies = []
     def test_add_dependency_optional(self, temp_project_dir):
         """Test adding to optional dependency group."""
         pyproject = temp_project_dir / "pyproject.toml"
-        pyproject.write_text("[project]\nname = \"test\"")
-        
+        pyproject.write_text('[project]\nname = "test"')
+
         manager = DependencyManager(project_root=temp_project_dir)
         result = manager.add_dependency("pytest", ">=7.0", optional_group="dev")
-        
+
         assert result["success"] is True
         assert "dev" in result["target"]
 
@@ -108,7 +108,7 @@ dependencies = ["requests>=2.0"]
 """)
         manager = DependencyManager(project_root=temp_project_dir)
         result = manager.add_dependency("requests")
-        
+
         assert result["success"] is False
         assert "already exists" in result["error"]
 
@@ -120,7 +120,7 @@ class TestDependencyManagerHelpers:
         """Test finding existing dependency."""
         manager = DependencyManager(project_root=temp_project_dir)
         deps = ["requests>=2.0", "click==8.0"]
-        
+
         result = manager._find_existing_dependency(deps, "requests")
         assert result == "requests>=2.0"
 
@@ -128,7 +128,7 @@ class TestDependencyManagerHelpers:
         """Test finding non-existent dependency."""
         manager = DependencyManager(project_root=temp_project_dir)
         deps = ["requests>=2.0"]
-        
+
         result = manager._find_existing_dependency(deps, "click")
         assert result is None
 
@@ -136,7 +136,7 @@ class TestDependencyManagerHelpers:
         """Test finding dependency case-insensitively."""
         manager = DependencyManager(project_root=temp_project_dir)
         deps = ["Requests>=2.0"]
-        
+
         result = manager._find_existing_dependency(deps, "requests")
         assert result == "Requests>=2.0"
 
@@ -151,10 +151,10 @@ class TestDependencyManagerSync:
         mock_env.exists.return_value = True
         mock_app.get_environment.return_value = mock_env
         mock_app.project.config.envs = {"default": {}}
-        
+
         manager = DependencyManager(project_root=temp_project_dir, app=mock_app)
         result = manager.sync_environment()
-        
+
         assert result["success"] is True
         mock_env.remove.assert_called_once()
         mock_env.create.assert_called_once()
@@ -175,7 +175,7 @@ dev = ["pytest"]
 """)
         manager = DependencyManager(project_root=temp_project_dir)
         result = manager.get_current_dependencies()
-        
+
         assert "requests>=2.0" in result["main"]
         assert "click" in result["main"]
         assert "pytest" in result["optional"]["dev"]
@@ -262,4 +262,3 @@ class TestDependencyConstraints:
     def test_merge_constraints(self):
         """Test merging multiple constraints."""
         pass
-

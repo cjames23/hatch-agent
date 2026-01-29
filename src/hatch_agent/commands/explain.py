@@ -1,30 +1,29 @@
 """CLI command for explaining build failures using multi-agent analysis."""
 
-import click
 from pathlib import Path
 
+import click
+
 from hatch_agent.agent.core import Agent
-from hatch_agent.config import load_config
 from hatch_agent.analyzers.build import BuildAnalyzer
+from hatch_agent.config import load_config
 
 
 @click.command()
 @click.option(
-    '--project-root',
+    "--project-root",
     type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path),
     default=None,
-    help='Root directory of the Hatch project (defaults to current directory)'
+    help="Root directory of the Hatch project (defaults to current directory)",
 )
 @click.option(
-    '--config',
+    "--config",
     type=click.Path(exists=True, file_okay=True, dir_okay=False, path_type=Path),
     default=None,
-    help='Path to agent configuration file'
+    help="Path to agent configuration file",
 )
 @click.option(
-    '--show-all',
-    is_flag=True,
-    help='Show all agent suggestions, not just the selected one'
+    "--show-all", is_flag=True, help="Show all agent suggestions, not just the selected one"
 )
 def explain(project_root: Path, config: Path, show_all: bool):
     """Explain why a Hatch build failed.
@@ -67,7 +66,7 @@ def explain(project_root: Path, config: Path, show_all: bool):
         name="build-explainer",
         use_multi_agent=True,
         provider_name=provider,
-        provider_config=provider_cfg
+        provider_config=provider_cfg,
     )
 
     # Add build context to agent state
@@ -123,15 +122,21 @@ def _build_explanation_task(context: dict) -> str:
 
     test_result = context.get("test_result", {})
     if test_result.get("success") is False:
-        failures.append(f"Tests failed with exit code {test_result.get('exit_code')}:\n{test_result.get('stderr', test_result.get('stdout', ''))[:500]}")
+        failures.append(
+            f"Tests failed with exit code {test_result.get('exit_code')}:\n{test_result.get('stderr', test_result.get('stdout', ''))[:500]}"
+        )
 
     format_result = context.get("format_result", {})
     if format_result.get("success") is False:
-        failures.append(f"Formatting issues:\n{format_result.get('stdout', format_result.get('stderr', ''))[:500]}")
+        failures.append(
+            f"Formatting issues:\n{format_result.get('stdout', format_result.get('stderr', ''))[:500]}"
+        )
 
     type_result = context.get("type_result", {})
     if type_result.get("success") is False:
-        failures.append(f"Type checking errors:\n{type_result.get('stdout', type_result.get('stderr', ''))[:500]}")
+        failures.append(
+            f"Type checking errors:\n{type_result.get('stdout', type_result.get('stderr', ''))[:500]}"
+        )
 
     if not failures:
         return "All checks passed. Provide recommendations for maintaining code quality."
@@ -152,4 +157,3 @@ Please:
 
 if __name__ == "__main__":
     explain()
-

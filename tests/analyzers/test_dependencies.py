@@ -1,9 +1,5 @@
 """Tests for dependency analysis."""
 
-from unittest.mock import MagicMock, Mock, patch
-
-import pytest
-
 from hatch_agent.analyzers.dependencies import analyze_dependencies
 
 
@@ -22,7 +18,7 @@ dependencies = [
 ]
 """)
         result = analyze_dependencies(str(pyproject))
-        
+
         assert "requests>=2.28.0" in result["dependencies"]
         assert "click>=8.0.0" in result["dependencies"]
 
@@ -35,14 +31,14 @@ python = "^3.10"
 requests = "^2.28.0"
 """)
         result = analyze_dependencies(str(pyproject))
-        
+
         # Poetry deps are converted to strings
         assert any("requests" in d for d in result["dependencies"])
 
     def test_analyze_file_not_found(self, temp_project_dir):
         """Test analyzing non-existent file."""
         result = analyze_dependencies(str(temp_project_dir / "nonexistent.toml"))
-        
+
         assert "error" in result
         assert "not found" in result["error"]
 
@@ -54,7 +50,7 @@ requests = "^2.28.0"
 name = "test-project"
 """)
         result = analyze_dependencies(str(pyproject))
-        
+
         assert result["dependencies"] == []
 
     def test_analyze_mixed_dependencies(self, temp_project_dir):
@@ -68,7 +64,7 @@ dependencies = ["requests>=2.0"]
 click = "^8.0"
 """)
         result = analyze_dependencies(str(pyproject))
-        
+
         assert "requests>=2.0" in result["dependencies"]
         # Poetry deps also included
         assert len(result["dependencies"]) >= 1
@@ -167,4 +163,3 @@ class TestDependencyValidation:
     def test_detect_duplicate_dependencies(self):
         """Test detecting duplicate dependencies."""
         pass
-

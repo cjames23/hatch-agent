@@ -1,9 +1,7 @@
 """Tests for dependency updater."""
 
-from unittest.mock import MagicMock, Mock, patch
 from pathlib import Path
-
-import pytest
+from unittest.mock import MagicMock, patch
 
 from hatch_agent.analyzers.updater import DependencyUpdater
 
@@ -13,10 +11,10 @@ class TestDependencyUpdaterInit:
 
     def test_init_default_values(self):
         """Test initialization with default values."""
-        with patch.object(Path, 'cwd', return_value=Path('/test/project')):
+        with patch.object(Path, "cwd", return_value=Path("/test/project")):
             updater = DependencyUpdater()
-            assert updater.project_root == Path('/test/project')
-            assert updater.pyproject_path == Path('/test/project/pyproject.toml')
+            assert updater.project_root == Path("/test/project")
+            assert updater.pyproject_path == Path("/test/project/pyproject.toml")
 
     def test_init_with_project_root(self, temp_project_dir):
         """Test initialization with custom project root."""
@@ -34,10 +32,10 @@ class TestDependencyUpdaterLatestVersion:
             mock_response.status_code = 200
             mock_response.json.return_value = {"info": {"version": "2.31.0"}}
             mock_get.return_value = mock_response
-            
+
             updater = DependencyUpdater()
             version = updater.get_latest_version("requests")
-            
+
             assert version == "2.31.0"
 
     def test_get_latest_version_not_found(self):
@@ -46,20 +44,20 @@ class TestDependencyUpdaterLatestVersion:
             mock_response = MagicMock()
             mock_response.status_code = 404
             mock_get.return_value = mock_response
-            
+
             updater = DependencyUpdater()
             version = updater.get_latest_version("nonexistent-package")
-            
+
             assert version is None
 
     def test_get_latest_version_network_error(self):
         """Test get_latest_version handles network errors."""
         with patch("requests.get") as mock_get:
             mock_get.side_effect = Exception("Network error")
-            
+
             updater = DependencyUpdater()
             version = updater.get_latest_version("requests")
-            
+
             assert version is None
 
 
@@ -72,17 +70,13 @@ class TestDependencyUpdaterChangelogUrl:
             mock_response = MagicMock()
             mock_response.status_code = 200
             mock_response.json.return_value = {
-                "info": {
-                    "project_urls": {
-                        "Changelog": "https://example.com/changelog"
-                    }
-                }
+                "info": {"project_urls": {"Changelog": "https://example.com/changelog"}}
             }
             mock_get.return_value = mock_response
-            
+
             updater = DependencyUpdater()
             url = updater.get_changelog_url("some-package")
-            
+
             assert url == "https://example.com/changelog"
 
     def test_get_changelog_url_github_fallback(self):
@@ -91,16 +85,13 @@ class TestDependencyUpdaterChangelogUrl:
             mock_response = MagicMock()
             mock_response.status_code = 200
             mock_response.json.return_value = {
-                "info": {
-                    "home_page": "https://github.com/user/repo",
-                    "project_urls": {}
-                }
+                "info": {"home_page": "https://github.com/user/repo", "project_urls": {}}
             }
             mock_get.return_value = mock_response
-            
+
             updater = DependencyUpdater()
             url = updater.get_changelog_url("some-package")
-            
+
             assert url == "https://github.com/user/repo/releases"
 
 
@@ -117,7 +108,7 @@ dependencies = ["requests>=2.0.0"]
 """)
         updater = DependencyUpdater(project_root=temp_project_dir)
         result = updater.update_dependency("requests", ">=2.31.0")
-        
+
         assert result["success"] is True
         assert result["old_version"] == ">=2.0.0"
         assert result["new_version"] == ">=2.31.0"
@@ -134,7 +125,7 @@ dev = ["pytest>=7.0"]
 """)
         updater = DependencyUpdater(project_root=temp_project_dir)
         result = updater.update_dependency("pytest", ">=8.0", optional_group="dev")
-        
+
         assert result["success"] is True
         assert "dev" in result["target"]
 
@@ -142,10 +133,10 @@ dev = ["pytest>=7.0"]
         """Test updating non-existent dependency."""
         pyproject = temp_project_dir / "pyproject.toml"
         pyproject.write_text("[project]\ndependencies = []")
-        
+
         updater = DependencyUpdater(project_root=temp_project_dir)
         result = updater.update_dependency("nonexistent", ">=1.0")
-        
+
         assert result["success"] is False
         assert "not found" in result["error"]
 
@@ -156,7 +147,7 @@ class TestDependencyUpdaterHelpers:
     def test_matches_package(self, temp_project_dir):
         """Test package name matching."""
         updater = DependencyUpdater(project_root=temp_project_dir)
-        
+
         assert updater._matches_package("requests>=2.0", "requests") is True
         assert updater._matches_package("Requests>=2.0", "requests") is True
         assert updater._matches_package("requests[socks]>=2.0", "requests") is True
@@ -165,7 +156,7 @@ class TestDependencyUpdaterHelpers:
     def test_extract_package_name(self, temp_project_dir):
         """Test extracting package name from dep string."""
         updater = DependencyUpdater(project_root=temp_project_dir)
-        
+
         assert updater._extract_package_name("requests>=2.0") == "requests"
         assert updater._extract_package_name("requests[socks]>=2.0") == "requests"
         assert updater._extract_package_name("click") == "click"
@@ -173,7 +164,7 @@ class TestDependencyUpdaterHelpers:
     def test_extract_version(self, temp_project_dir):
         """Test extracting version from dep string."""
         updater = DependencyUpdater(project_root=temp_project_dir)
-        
+
         assert updater._extract_version("requests>=2.0") == ">=2.0"
         assert updater._extract_version("click==8.0.0") == "==8.0.0"
         assert updater._extract_version("package") is None
@@ -191,7 +182,7 @@ dependencies = ["requests>=2.28.0"]
 """)
         updater = DependencyUpdater(project_root=temp_project_dir)
         version = updater.get_current_version("requests")
-        
+
         assert version == ">=2.28.0"
 
     def test_get_current_version_optional(self, temp_project_dir):
@@ -205,7 +196,7 @@ dev = ["pytest>=7.0"]
 """)
         updater = DependencyUpdater(project_root=temp_project_dir)
         version = updater.get_current_version("pytest")
-        
+
         assert version == ">=7.0"
 
 
@@ -218,10 +209,10 @@ class TestDependencyUpdaterProjectFiles:
         src_dir.mkdir()
         (src_dir / "app.py").write_text("# app")
         (src_dir / "utils.py").write_text("# utils")
-        
+
         updater = DependencyUpdater(project_root=temp_project_dir)
         files = updater.get_project_files()
-        
+
         assert len(files) >= 2
         assert any("app.py" in str(f) for f in files)
 
@@ -233,10 +224,10 @@ class TestDependencyUpdaterProjectFiles:
         cache = src / "__pycache__"
         cache.mkdir()
         (cache / "app.cpython-310.pyc").write_text("")
-        
+
         updater = DependencyUpdater(project_root=temp_project_dir)
         files = updater.get_project_files()
-        
+
         assert not any("__pycache__" in str(f) for f in files)
 
 
@@ -250,11 +241,10 @@ class TestDependencyUpdaterSync:
         mock_env.exists.return_value = True
         mock_app.get_environment.return_value = mock_env
         mock_app.project.config.envs = {"default": {}}
-        
+
         updater = DependencyUpdater(app=mock_app)
         result = updater.sync_environment()
-        
+
         assert result["success"] is True
         mock_env.remove.assert_called_once()
         mock_env.create.assert_called_once()
-

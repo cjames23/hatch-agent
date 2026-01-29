@@ -19,21 +19,22 @@ class TestStrandsProvider:
     def test_complete_multi_agent_mode(self):
         """Test complete in multi-agent mode."""
         # Patch at the import location inside the complete method
-        with patch.dict('sys.modules', {'hatch_agent.agent.multi_agent': MagicMock()}):
+        with patch.dict("sys.modules", {"hatch_agent.agent.multi_agent": MagicMock()}):
             import sys
-            mock_module = sys.modules['hatch_agent.agent.multi_agent']
+
+            mock_module = sys.modules["hatch_agent.agent.multi_agent"]
             mock_orchestrator = MagicMock()
             mock_orchestrator.run.return_value = {
                 "selected_suggestion": "Use requests library",
                 "selected_agent": "ConfigSpecialist",
-                "reasoning": "Best for HTTP"
+                "reasoning": "Best for HTTP",
             }
             mock_module.MultiAgentOrchestrator.return_value = mock_orchestrator
-            
+
             config = {"mode": "multi-agent", "underlying_provider": "openai"}
             provider = StrandsProvider(config)
             result = provider.complete("Add HTTP client")
-            
+
             assert "Use requests library" in result
             assert "ConfigSpecialist" in result
 
@@ -43,50 +44,52 @@ class TestStrandsProvider:
         mock_agent_instance = MagicMock()
         mock_agent_instance.return_value = "Single agent response"
         mock_strands_agent.return_value = mock_agent_instance
-        
+
         config = {"mode": "single"}
         provider = StrandsProvider(config)
         result = provider.complete("Test prompt")
-        
+
         assert "Single agent response" in result
         mock_strands_agent.assert_called_once()
 
     def test_complete_default_mode_is_multi_agent(self):
         """Test that default mode is multi-agent."""
-        with patch.dict('sys.modules', {'hatch_agent.agent.multi_agent': MagicMock()}):
+        with patch.dict("sys.modules", {"hatch_agent.agent.multi_agent": MagicMock()}):
             import sys
-            mock_module = sys.modules['hatch_agent.agent.multi_agent']
+
+            mock_module = sys.modules["hatch_agent.agent.multi_agent"]
             mock_orchestrator = MagicMock()
             mock_orchestrator.run.return_value = {
                 "selected_suggestion": "suggestion",
                 "selected_agent": "agent",
-                "reasoning": "reason"
+                "reasoning": "reason",
             }
             mock_module.MultiAgentOrchestrator.return_value = mock_orchestrator
-            
+
             config = {}  # No mode specified
             provider = StrandsProvider(config)
             provider.complete("Test")
-            
+
             mock_module.MultiAgentOrchestrator.assert_called()
 
     def test_complete_passes_model_to_config(self):
         """Test that model is passed through to underlying config."""
-        with patch.dict('sys.modules', {'hatch_agent.agent.multi_agent': MagicMock()}):
+        with patch.dict("sys.modules", {"hatch_agent.agent.multi_agent": MagicMock()}):
             import sys
-            mock_module = sys.modules['hatch_agent.agent.multi_agent']
+
+            mock_module = sys.modules["hatch_agent.agent.multi_agent"]
             mock_orchestrator = MagicMock()
             mock_orchestrator.run.return_value = {
                 "selected_suggestion": "s",
                 "selected_agent": "a",
-                "reasoning": "r"
+                "reasoning": "r",
             }
             mock_module.MultiAgentOrchestrator.return_value = mock_orchestrator
-            
+
             config = {"mode": "multi-agent", "model": "gpt-4-turbo"}
             provider = StrandsProvider(config)
             provider.complete("Test")
-            
+
             # Verify orchestrator was called
             mock_module.MultiAgentOrchestrator.assert_called()
 
@@ -94,8 +97,8 @@ class TestStrandsProvider:
         """Test that chat routes to complete."""
         config = {}
         provider = StrandsProvider(config)
-        
-        with patch.object(provider, 'complete', return_value="response") as mock_complete:
+
+        with patch.object(provider, "complete", return_value="response") as mock_complete:
             result = provider.chat("message")
             mock_complete.assert_called_once_with("message")
             assert result == "response"
@@ -109,7 +112,7 @@ class TestLLMClient:
         config = {
             "underlying_provider": "openai",
             "model": "gpt-4",
-            "underlying_config": {"api_key": "test"}
+            "underlying_config": {"api_key": "test"},
         }
         client = LLMClient.from_config(config)
         assert client.provider_config == config
@@ -125,9 +128,7 @@ class TestLLMClient:
         config = {
             "provider": "openai",
             "model": "gpt-4",
-            "providers": {
-                "openai": {"api_key": "test-key"}
-            }
+            "providers": {"openai": {"api_key": "test-key"}},
         }
         client = LLMClient.from_config(config)
         assert client.provider_config["underlying_provider"] == "openai"
@@ -138,24 +139,14 @@ class TestLLMClient:
         config = {
             "provider": "strands",
             "model": "gpt-4",
-            "providers": {
-                "strands": {
-                    "underlying_provider": "openai"
-                }
-            }
+            "providers": {"strands": {"underlying_provider": "openai"}},
         }
         client = LLMClient.from_config(config)
         assert "model" in client.provider_config
 
     def test_from_config_model_passthrough(self):
         """Test that model is passed through in old-style config."""
-        config = {
-            "provider": "strands",
-            "model": "claude-3",
-            "providers": {
-                "strands": {}
-            }
-        }
+        config = {"provider": "strands", "model": "claude-3", "providers": {"strands": {}}}
         client = LLMClient.from_config(config)
         assert client.provider_config.get("model") == "claude-3"
 
@@ -168,8 +159,8 @@ class TestLLMClient:
     def test_complete_calls_provider(self):
         """Test complete calls through to provider."""
         client = LLMClient(provider_config={})
-        
-        with patch.object(StrandsProvider, 'complete', return_value="response") as mock:
+
+        with patch.object(StrandsProvider, "complete", return_value="response") as mock:
             result = client.complete("test prompt")
             mock.assert_called_once_with("test prompt")
             assert result == "response"
@@ -177,8 +168,8 @@ class TestLLMClient:
     def test_chat_calls_provider(self):
         """Test chat calls through to provider."""
         client = LLMClient(provider_config={})
-        
-        with patch.object(StrandsProvider, 'chat', return_value="response") as mock:
+
+        with patch.object(StrandsProvider, "chat", return_value="response") as mock:
             result = client.chat("test message")
             mock.assert_called_once_with("test message")
             assert result == "response"
@@ -210,8 +201,7 @@ class TestOpenAIProvider:
     def test_openai_chat_completion(self, mock_openai_client):
         """Test OpenAI chat completion without API calls."""
         response = mock_openai_client.chat.completions.create(
-            model="gpt-4",
-            messages=[{"role": "user", "content": "Hello"}]
+            model="gpt-4", messages=[{"role": "user", "content": "Hello"}]
         )
 
         assert response.choices[0].message.content == "Mocked OpenAI response"
@@ -226,9 +216,7 @@ class TestOpenAIProvider:
         mock_openai_client.chat.completions.create.return_value = iter(mock_stream)
 
         response = mock_openai_client.chat.completions.create(
-            model="gpt-4",
-            messages=[{"role": "user", "content": "Hello"}],
-            stream=True
+            model="gpt-4", messages=[{"role": "user", "content": "Hello"}], stream=True
         )
 
         chunks = list(response)
@@ -240,8 +228,7 @@ class TestOpenAIProvider:
 
         with pytest.raises(Exception) as exc_info:
             mock_openai_client.chat.completions.create(
-                model="gpt-4",
-                messages=[{"role": "user", "content": "Hello"}]
+                model="gpt-4", messages=[{"role": "user", "content": "Hello"}]
             )
 
         assert "API Error" in str(exc_info.value)
@@ -249,8 +236,7 @@ class TestOpenAIProvider:
     def test_openai_token_counting(self, mock_openai_client):
         """Test token usage tracking."""
         response = mock_openai_client.chat.completions.create(
-            model="gpt-4",
-            messages=[{"role": "user", "content": "Hello"}]
+            model="gpt-4", messages=[{"role": "user", "content": "Hello"}]
         )
 
         assert response.usage.prompt_tokens > 0
@@ -266,7 +252,7 @@ class TestAnthropicProvider:
         response = mock_anthropic_client.messages.create(
             model="claude-3-opus-20240229",
             max_tokens=1024,
-            messages=[{"role": "user", "content": "Hello"}]
+            messages=[{"role": "user", "content": "Hello"}],
         )
 
         assert response.content[0].text == "Mocked Anthropic response"
@@ -278,26 +264,28 @@ class TestAnthropicProvider:
             Mock(type="content_block_delta", delta=Mock(text="Hello")),
             Mock(type="content_block_delta", delta=Mock(text=" world")),
         ]
-        mock_anthropic_client.messages.stream.return_value.__enter__ = Mock(return_value=iter(mock_stream))
+        mock_anthropic_client.messages.stream.return_value.__enter__ = Mock(
+            return_value=iter(mock_stream)
+        )
         mock_anthropic_client.messages.stream.return_value.__exit__ = Mock(return_value=False)
 
         with mock_anthropic_client.messages.stream(
             model="claude-3-opus-20240229",
             max_tokens=1024,
-            messages=[{"role": "user", "content": "Hello"}]
+            messages=[{"role": "user", "content": "Hello"}],
         ) as stream:
             chunks = list(stream)
             assert len(chunks) == 2
 
     def test_anthropic_error_handling(self, mock_anthropic_client):
         """Test Anthropic error handling."""
-        mock_anthropic_client.messages.create.side_effect = Exception("API Error")
+        mock_anthropic_client.messages.create.side_effect = RuntimeError("API Error")
 
-        with pytest.raises(Exception):
+        with pytest.raises(RuntimeError, match="API Error"):
             mock_anthropic_client.messages.create(
                 model="claude-3-opus-20240229",
                 max_tokens=1024,
-                messages=[{"role": "user", "content": "Hello"}]
+                messages=[{"role": "user", "content": "Hello"}],
             )
 
     def test_anthropic_token_usage(self, mock_anthropic_client):
@@ -305,7 +293,7 @@ class TestAnthropicProvider:
         response = mock_anthropic_client.messages.create(
             model="claude-3-opus-20240229",
             max_tokens=1024,
-            messages=[{"role": "user", "content": "Hello"}]
+            messages=[{"role": "user", "content": "Hello"}],
         )
 
         assert response.usage.input_tokens > 0
@@ -335,9 +323,9 @@ class TestGoogleAIProvider:
 
     def test_google_error_handling(self, mock_google_client):
         """Test Google AI error handling."""
-        mock_google_client.generate_content.side_effect = Exception("API Error")
+        mock_google_client.generate_content.side_effect = RuntimeError("API Error")
 
-        with pytest.raises(Exception):
+        with pytest.raises(RuntimeError, match="API Error"):
             mock_google_client.generate_content("Hello")
 
 
@@ -347,8 +335,7 @@ class TestLLMResponseParsing:
     def test_parse_openai_response(self, mock_openai_client):
         """Test parsing OpenAI response format."""
         response = mock_openai_client.chat.completions.create(
-            model="gpt-4",
-            messages=[{"role": "user", "content": "Hello"}]
+            model="gpt-4", messages=[{"role": "user", "content": "Hello"}]
         )
 
         content = response.choices[0].message.content
@@ -360,7 +347,7 @@ class TestLLMResponseParsing:
         response = mock_anthropic_client.messages.create(
             model="claude-3-opus-20240229",
             max_tokens=1024,
-            messages=[{"role": "user", "content": "Hello"}]
+            messages=[{"role": "user", "content": "Hello"}],
         )
 
         content = response.content[0].text
@@ -382,8 +369,7 @@ class TestLLMCostTracking:
     def test_track_openai_costs(self, mock_openai_client):
         """Test tracking OpenAI API costs."""
         response = mock_openai_client.chat.completions.create(
-            model="gpt-4",
-            messages=[{"role": "user", "content": "Hello"}]
+            model="gpt-4", messages=[{"role": "user", "content": "Hello"}]
         )
 
         # Calculate approximate cost based on token usage
@@ -398,7 +384,7 @@ class TestLLMCostTracking:
         response = mock_anthropic_client.messages.create(
             model="claude-3-opus-20240229",
             max_tokens=1024,
-            messages=[{"role": "user", "content": "Hello"}]
+            messages=[{"role": "user", "content": "Hello"}],
         )
 
         assert response.usage.input_tokens > 0

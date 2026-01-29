@@ -5,9 +5,9 @@ This module implements a multi-agent approach where:
 - A judge agent evaluates and selects the best approach
 """
 
-from typing import Dict, Any, List, Optional
-from dataclasses import dataclass
 import json
+from dataclasses import dataclass
+from typing import Any
 
 from strands import Agent as StrandsAgent
 
@@ -15,6 +15,7 @@ from strands import Agent as StrandsAgent
 @dataclass
 class AgentResponse:
     """Response from an individual agent."""
+
     agent_name: str
     suggestion: str
     reasoning: str
@@ -29,7 +30,9 @@ class MultiAgentOrchestrator:
     2. A judge agent evaluates all suggestions and picks the best one
     """
 
-    def __init__(self, provider_name: str = "openai", provider_config: Optional[Dict[str, Any]] = None):
+    def __init__(
+        self, provider_name: str = "openai", provider_config: dict[str, Any] | None = None
+    ):
         """Initialize the multi-agent orchestrator.
 
         Args:
@@ -44,7 +47,7 @@ class MultiAgentOrchestrator:
         system_prompt = f"You are a {role}.\n\n{instructions}"
         return StrandsAgent(system_prompt=system_prompt)
 
-    def run(self, task: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def run(self, task: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
         """Run the multi-agent system to solve a task.
 
         Args:
@@ -57,7 +60,9 @@ class MultiAgentOrchestrator:
         context = context or {}
 
         # Check if this is a dependency update task
-        is_update_task = "updating the dependency" in task.lower() or "update strategy" in task.lower()
+        is_update_task = (
+            "updating the dependency" in task.lower() or "update strategy" in task.lower()
+        )
 
         if is_update_task:
             # Use specialized agents for dependency updates
@@ -67,19 +72,19 @@ class MultiAgentOrchestrator:
         agent1 = self._create_agent(
             name="ConfigurationSpecialist",
             role="Hatch project configuration expert",
-            instructions=self._get_configuration_specialist_prompt()
+            instructions=self._get_configuration_specialist_prompt(),
         )
 
         agent2 = self._create_agent(
             name="WorkflowSpecialist",
             role="Hatch workflow and automation expert",
-            instructions=self._get_workflow_specialist_prompt()
+            instructions=self._get_workflow_specialist_prompt(),
         )
 
         judge_agent = self._create_agent(
             name="Judge",
             role="Solution evaluator and selector",
-            instructions=self._get_judge_prompt()
+            instructions=self._get_judge_prompt(),
         )
 
         # Get suggestions from both specialist agents
@@ -106,13 +111,13 @@ class MultiAgentOrchestrator:
                     "agent": s.agent_name,
                     "suggestion": s.suggestion,
                     "reasoning": s.reasoning,
-                    "confidence": s.confidence
+                    "confidence": s.confidence,
                 }
                 for s in suggestions
-            ]
+            ],
         }
 
-    def _run_update_agents(self, task: str, context: Dict[str, Any]) -> Dict[str, Any]:
+    def _run_update_agents(self, task: str, context: dict[str, Any]) -> dict[str, Any]:
         """Run specialized agents for dependency updates.
 
         Uses different specialist agents focused on:
@@ -123,19 +128,19 @@ class MultiAgentOrchestrator:
         agent1 = self._create_agent(
             name="APIAnalysisSpecialist",
             role="API compatibility and breaking change analyst",
-            instructions=self._get_api_analysis_prompt()
+            instructions=self._get_api_analysis_prompt(),
         )
 
         agent2 = self._create_agent(
             name="CodeMigrationSpecialist",
             role="Minimal code migration expert",
-            instructions=self._get_code_migration_prompt()
+            instructions=self._get_code_migration_prompt(),
         )
 
         judge_agent = self._create_agent(
             name="UpdateJudge",
             role="Update strategy evaluator",
-            instructions=self._get_update_judge_prompt()
+            instructions=self._get_update_judge_prompt(),
         )
 
         # Get suggestions from both specialist agents
@@ -160,17 +165,15 @@ class MultiAgentOrchestrator:
                     "agent": s.agent_name,
                     "suggestion": s.suggestion,
                     "reasoning": s.reasoning,
-                    "confidence": s.confidence
+                    "confidence": s.confidence,
                 }
                 for s in suggestions
-            ]
+            ],
         }
 
     def run_bulk_update_analysis(
-        self,
-        updates: List[Dict[str, str]],
-        context: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, updates: list[dict[str, str]], context: dict[str, Any]
+    ) -> dict[str, Any]:
         """Analyze multiple package updates efficiently.
 
         This method processes multiple dependency updates and aggregates the
@@ -183,9 +186,9 @@ class MultiAgentOrchestrator:
         Returns:
             Aggregated analysis with all breaking changes and code modifications
         """
-        all_code_changes: List[Dict[str, Any]] = []
-        all_breaking_changes: List[Dict[str, str]] = []
-        failed_packages: List[str] = []
+        all_code_changes: list[dict[str, Any]] = []
+        all_breaking_changes: list[dict[str, str]] = []
+        failed_packages: list[str] = []
 
         for update in updates:
             package = update.get("package", "unknown")
@@ -196,11 +199,7 @@ class MultiAgentOrchestrator:
             task = self._build_bulk_update_task(update, updates)
 
             # Merge update-specific context
-            update_context = {
-                **context,
-                "current_package": package,
-                "current_update": update
-            }
+            update_context = {**context, "current_package": package, "current_update": update}
 
             # Run existing update agents
             try:
@@ -212,12 +211,14 @@ class MultiAgentOrchestrator:
                     if plan:
                         # Add package info to each breaking change
                         for bc in plan.get("breaking_changes", []):
-                            all_breaking_changes.append({
-                                "package": package,
-                                "old_version": old_version,
-                                "new_version": new_version,
-                                "change": bc
-                            })
+                            all_breaking_changes.append(
+                                {
+                                    "package": package,
+                                    "old_version": old_version,
+                                    "new_version": new_version,
+                                    "change": bc,
+                                }
+                            )
 
                         # Add package info to each code change
                         for cc in plan.get("code_changes", []):
@@ -236,13 +237,11 @@ class MultiAgentOrchestrator:
             "breaking_changes": all_breaking_changes,
             "code_changes": unique_changes,
             "packages_analyzed": len(updates),
-            "failed_packages": failed_packages
+            "failed_packages": failed_packages,
         }
 
     def _build_bulk_update_task(
-        self,
-        current_update: Dict[str, str],
-        all_updates: List[Dict[str, str]]
+        self, current_update: dict[str, str], all_updates: list[dict[str, str]]
     ) -> str:
         """Build a task description for bulk update analysis.
 
@@ -261,10 +260,12 @@ class MultiAgentOrchestrator:
         other_updates = [u for u in all_updates if u.get("package") != package]
         other_updates_str = ""
         if other_updates:
-            other_list = ", ".join([
-                f"{u.get('package')} ({u.get('old_version')} → {u.get('new_version')})"
-                for u in other_updates[:5]  # Limit to 5 for context
-            ])
+            other_list = ", ".join(
+                [
+                    f"{u.get('package')} ({u.get('old_version')} → {u.get('new_version')})"
+                    for u in other_updates[:5]  # Limit to 5 for context
+                ]
+            )
             if len(other_updates) > 5:
                 other_list += f" and {len(other_updates) - 5} more"
             other_updates_str = f"\n\nNote: Other packages being updated in this sync: {other_list}"
@@ -311,7 +312,7 @@ If NO breaking changes or code changes are needed, use empty arrays:
 
 Provide this JSON block AFTER your explanation."""
 
-    def _extract_update_plan(self, suggestion: str) -> Optional[Dict[str, Any]]:
+    def _extract_update_plan(self, suggestion: str) -> dict[str, Any] | None:
         """Extract structured update plan from agent suggestion.
 
         Args:
@@ -340,10 +341,7 @@ Provide this JSON block AFTER your explanation."""
         except (json.JSONDecodeError, IndexError):
             return None
 
-    def _deduplicate_code_changes(
-        self,
-        code_changes: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+    def _deduplicate_code_changes(self, code_changes: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Deduplicate code changes that affect the same file/lines.
 
         If multiple packages suggest changes to the same file and line range,
@@ -355,7 +353,7 @@ Provide this JSON block AFTER your explanation."""
         Returns:
             Deduplicated list of code changes
         """
-        seen: Dict[str, Dict[str, Any]] = {}
+        seen: dict[str, dict[str, Any]] = {}
 
         for change in code_changes:
             file_path = change.get("file", "")
@@ -601,7 +599,9 @@ Always provide your response as valid JSON with:
 
 Prioritize MINIMALISM above all else. The best update makes the fewest changes."""
 
-    def _get_agent_response(self, agent: StrandsAgent, task: str, context: Dict[str, Any]) -> AgentResponse:
+    def _get_agent_response(
+        self, agent: StrandsAgent, task: str, context: dict[str, Any]
+    ) -> AgentResponse:
         """Get a response from a single agent."""
         prompt = self._build_prompt(task, context)
         result = agent.run(prompt)
@@ -611,16 +611,16 @@ Prioritize MINIMALISM above all else. The best update makes the fewest changes."
         self,
         judge: StrandsAgent,
         task: str,
-        suggestions: List[AgentResponse],
-        context: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        suggestions: list[AgentResponse],
+        context: dict[str, Any],
+    ) -> dict[str, Any]:
         """Have the judge agent evaluate and select the best suggestion."""
         judge_prompt = self._build_judge_prompt(task, suggestions, context)
         result = judge.run(judge_prompt)
         decision = self._parse_judge_decision(result, suggestions)
         return decision
 
-    def _build_prompt(self, task: str, context: Dict[str, Any]) -> str:
+    def _build_prompt(self, task: str, context: dict[str, Any]) -> str:
         """Build a prompt for an agent."""
         context_str = ""
         if context:
@@ -644,19 +644,18 @@ RESPONSE FORMAT (JSON):
 Ensure your response is valid JSON."""
 
     def _build_judge_prompt(
-        self,
-        task: str,
-        suggestions: List[AgentResponse],
-        context: Dict[str, Any]
+        self, task: str, suggestions: list[AgentResponse], context: dict[str, Any]
     ) -> str:
         """Build a prompt for the judge agent."""
-        suggestions_str = "\n\n".join([
-            f"=== Suggestion from {s.agent_name} ===\n"
-            f"Suggestion: {s.suggestion}\n"
-            f"Reasoning: {s.reasoning}\n"
-            f"Confidence: {s.confidence}"
-            for s in suggestions
-        ])
+        suggestions_str = "\n\n".join(
+            [
+                f"=== Suggestion from {s.agent_name} ===\n"
+                f"Suggestion: {s.suggestion}\n"
+                f"Reasoning: {s.reasoning}\n"
+                f"Confidence: {s.confidence}"
+                for s in suggestions
+            ]
+        )
 
         context_str = ""
         if context:
@@ -693,32 +692,28 @@ Ensure your response is valid JSON."""
                     agent_name=agent_name,
                     suggestion=data.get("suggestion", result),
                     reasoning=data.get("reasoning", ""),
-                    confidence=data.get("confidence", 0.7)
+                    confidence=data.get("confidence", 0.7),
                 )
             except json.JSONDecodeError:
                 # Fallback: treat entire response as suggestion
                 return AgentResponse(
-                    agent_name=agent_name,
-                    suggestion=result,
-                    reasoning="",
-                    confidence=0.5
+                    agent_name=agent_name, suggestion=result, reasoning="", confidence=0.5
                 )
         elif isinstance(result, dict):
             return AgentResponse(
                 agent_name=agent_name,
                 suggestion=result.get("suggestion", str(result)),
                 reasoning=result.get("reasoning", ""),
-                confidence=result.get("confidence", 0.7)
+                confidence=result.get("confidence", 0.7),
             )
         else:
             return AgentResponse(
-                agent_name=agent_name,
-                suggestion=str(result),
-                reasoning="",
-                confidence=0.5
+                agent_name=agent_name, suggestion=str(result), reasoning="", confidence=0.5
             )
 
-    def _parse_judge_decision(self, result: Any, suggestions: List[AgentResponse]) -> Dict[str, Any]:
+    def _parse_judge_decision(
+        self, result: Any, suggestions: list[AgentResponse]
+    ) -> dict[str, Any]:
         """Parse the judge's decision."""
         if isinstance(result, str):
             try:
@@ -727,38 +722,36 @@ Ensure your response is valid JSON."""
 
                 # Find the matching suggestion
                 selected_suggestion = next(
-                    (s for s in suggestions if s.agent_name == selected_agent),
-                    suggestions[0]
+                    (s for s in suggestions if s.agent_name == selected_agent), suggestions[0]
                 )
 
                 return {
                     "agent_name": selected_agent,
                     "suggestion": data.get("suggestion", selected_suggestion.suggestion),
-                    "reasoning": data.get("reasoning", "")
+                    "reasoning": data.get("reasoning", ""),
                 }
             except json.JSONDecodeError:
                 # Fallback: use first suggestion
                 return {
                     "agent_name": suggestions[0].agent_name,
                     "suggestion": suggestions[0].suggestion,
-                    "reasoning": result
+                    "reasoning": result,
                 }
         elif isinstance(result, dict):
             selected_agent = result.get("selected_agent", suggestions[0].agent_name)
             selected_suggestion = next(
-                (s for s in suggestions if s.agent_name == selected_agent),
-                suggestions[0]
+                (s for s in suggestions if s.agent_name == selected_agent), suggestions[0]
             )
 
             return {
                 "agent_name": selected_agent,
                 "suggestion": result.get("suggestion", selected_suggestion.suggestion),
-                "reasoning": result.get("reasoning", "")
+                "reasoning": result.get("reasoning", ""),
             }
         else:
             # Fallback
             return {
                 "agent_name": suggestions[0].agent_name,
                 "suggestion": suggestions[0].suggestion,
-                "reasoning": str(result)
+                "reasoning": str(result),
             }

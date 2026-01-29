@@ -8,8 +8,9 @@ The multi-agent approach uses:
 - 2 specialist agents that generate different suggestions
 - 1 judge agent that evaluates and selects the best suggestion
 """
-from typing import Dict, Any
+
 from dataclasses import dataclass
+from typing import Any
 
 from strands import Agent as StrandsAgent
 
@@ -27,7 +28,7 @@ class StrandsProvider:
     - model: The model to use (e.g., 'gpt-4', 'claude-3', etc.)
     """
 
-    def __init__(self, config: Dict[str, Any]) -> None:
+    def __init__(self, config: dict[str, Any]) -> None:
         self.config = config
 
     def complete(self, prompt: str) -> str:
@@ -47,8 +48,7 @@ class StrandsProvider:
                 underlying_config["model"] = self.config.get("model")
 
             orchestrator = MultiAgentOrchestrator(
-                provider_name=underlying_provider,
-                provider_config=underlying_config
+                provider_name=underlying_provider, provider_config=underlying_config
             )
 
             result = orchestrator.run(task=prompt)
@@ -68,7 +68,9 @@ class StrandsProvider:
                 underlying_config = dict(underlying_config)
                 underlying_config["model"] = self.config.get("model")
 
-            system_prompt = "You are an expert in Hatch project management, configuration, and automation."
+            system_prompt = (
+                "You are an expert in Hatch project management, configuration, and automation."
+            )
             agent = StrandsAgent(system_prompt=system_prompt)
             result = agent(prompt)
             return str(result)
@@ -85,10 +87,11 @@ class LLMClient:
     This client simplifies LLM access by using strands-agents as the sole
     provider, which in turn supports multiple underlying providers and models.
     """
-    provider_config: Dict[str, Any]
+
+    provider_config: dict[str, Any]
 
     @classmethod
-    def from_config(cls, cfg: Dict[str, Any]) -> "LLMClient":
+    def from_config(cls, cfg: dict[str, Any]) -> "LLMClient":
         """Create an LLM client from configuration.
 
         Expected config structure:
@@ -127,7 +130,7 @@ class LLMClient:
             cfg = {
                 "underlying_provider": provider,
                 "model": cfg.get("model"),
-                "underlying_config": cfg.get("providers", {}).get(provider, {})
+                "underlying_config": cfg.get("providers", {}).get(provider, {}),
             }
             return cls(provider_config=cfg)
 

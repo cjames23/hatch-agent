@@ -1,13 +1,14 @@
 """Tests for add dependency command."""
 
 from unittest.mock import MagicMock, Mock, patch
-from pathlib import Path
-from click.testing import CliRunner
 
 import pytest
+from click.testing import CliRunner
 
 from hatch_agent.commands.add_dependency import (
-    add_dep, _build_dependency_task, _extract_dependency_info
+    _build_dependency_task,
+    _extract_dependency_info,
+    add_dep,
 )
 
 
@@ -29,19 +30,19 @@ class TestAddDepCLI:
         mock_dep_mgr = MagicMock()
         mock_dep_mgr.get_current_dependencies.return_value = {"main": [], "optional": {}}
         mock_dep_mgr_class.return_value = mock_dep_mgr
-        
+
         mock_load_config.return_value = {}
-        
+
         mock_agent = MagicMock()
         mock_agent.run_task.return_value = {
             "success": True,
-            "selected_suggestion": "Add requests\nACTION:\n{\"package\": \"requests\"}",
-            "selected_agent": "Agent1"
+            "selected_suggestion": 'Add requests\nACTION:\n{"package": "requests"}',
+            "selected_agent": "Agent1",
         }
         mock_agent_class.return_value = mock_agent
-        
+
         result = cli_runner.invoke(add_dep, ["add", "requests", "--dry-run"])
-        
+
         assert result.exit_code == 0
         assert "DRY RUN" in result.output
         mock_dep_mgr.add_dependency.assert_not_called()
@@ -56,15 +57,15 @@ class TestAddDepCLI:
         mock_dep_mgr = MagicMock()
         mock_dep_mgr.get_current_dependencies.return_value = {"main": [], "optional": {}}
         mock_dep_mgr_class.return_value = mock_dep_mgr
-        
+
         mock_load_config.return_value = {}
-        
+
         mock_agent = MagicMock()
         mock_agent.run_task.return_value = {"success": False, "output": "Error"}
         mock_agent_class.return_value = mock_agent
-        
+
         result = cli_runner.invoke(add_dep, ["add", "badpkg"])
-        
+
         assert result.exit_code != 0 or "failed" in result.output.lower()
 
 
@@ -96,7 +97,7 @@ class TestExtractDependencyInfo:
         {"package": "requests", "version": ">=2.28.0", "group": "dev"}
         """
         info = _extract_dependency_info(suggestion)
-        
+
         assert info["package"] == "requests"
         assert info["version"] == ">=2.28.0"
         assert info["group"] == "dev"
@@ -105,7 +106,7 @@ class TestExtractDependencyInfo:
         """Test extracting minimal dependency info."""
         suggestion = 'Add the package.\n\nACTION:\n{"package": "requests"}'
         info = _extract_dependency_info(suggestion)
-        
+
         assert info["package"] == "requests"
         assert "version" not in info
 
@@ -113,14 +114,14 @@ class TestExtractDependencyInfo:
         """Test extraction when no ACTION block present."""
         suggestion = "Just add requests package"
         info = _extract_dependency_info(suggestion)
-        
+
         assert info is None
 
     def test_extract_invalid_json(self):
         """Test extraction with invalid JSON."""
         suggestion = "ACTION:\n{not valid json}"
         info = _extract_dependency_info(suggestion)
-        
+
         assert info is None
 
 
@@ -156,23 +157,23 @@ class TestAddDepShowAll:
         mock_dep_mgr = MagicMock()
         mock_dep_mgr.get_current_dependencies.return_value = {"main": [], "optional": {}}
         mock_dep_mgr_class.return_value = mock_dep_mgr
-        
+
         mock_load_config.return_value = {}
-        
+
         mock_agent = MagicMock()
         mock_agent.run_task.return_value = {
             "success": True,
-            "selected_suggestion": "Add requests\nACTION:\n{\"package\": \"requests\"}",
+            "selected_suggestion": 'Add requests\nACTION:\n{"package": "requests"}',
             "selected_agent": "Agent1",
             "all_suggestions": [
                 {"agent": "Agent1", "suggestion": "Use requests", "confidence": 0.9},
-                {"agent": "Agent2", "suggestion": "Use httpx", "confidence": 0.7}
-            ]
+                {"agent": "Agent2", "suggestion": "Use httpx", "confidence": 0.7},
+            ],
         }
         mock_agent_class.return_value = mock_agent
-        
+
         result = cli_runner.invoke(add_dep, ["add", "requests", "--dry-run", "--show-all"])
-        
+
         assert result.exit_code == 0
         assert "ALL AGENT SUGGESTIONS" in result.output
 
@@ -186,19 +187,19 @@ class TestAddDepShowAll:
         mock_dep_mgr = MagicMock()
         mock_dep_mgr.get_current_dependencies.return_value = {"main": [], "optional": {}}
         mock_dep_mgr_class.return_value = mock_dep_mgr
-        
+
         mock_load_config.return_value = {}
-        
+
         mock_agent = MagicMock()
         mock_agent.run_task.return_value = {
             "success": True,
             "selected_suggestion": "You should add requests",  # No ACTION block
-            "selected_agent": "Agent1"
+            "selected_agent": "Agent1",
         }
         mock_agent_class.return_value = mock_agent
-        
+
         result = cli_runner.invoke(add_dep, ["add", "requests"])
-        
+
         assert result.exit_code == 0
         assert "Could not automatically execute" in result.output
 
@@ -212,19 +213,19 @@ class TestAddDepShowAll:
         mock_dep_mgr = MagicMock()
         mock_dep_mgr.get_current_dependencies.return_value = {"main": [], "optional": {}}
         mock_dep_mgr_class.return_value = mock_dep_mgr
-        
+
         mock_load_config.return_value = {}
-        
+
         mock_agent = MagicMock()
         mock_agent.run_task.return_value = {
             "success": True,
             "selected_suggestion": 'ACTION:\n{"package": "pytest", "version": ">=7.0", "group": "dev"}',
-            "selected_agent": "Agent1"
+            "selected_agent": "Agent1",
         }
         mock_agent_class.return_value = mock_agent
-        
+
         result = cli_runner.invoke(add_dep, ["add", "pytest", "--dry-run"])
-        
+
         assert result.exit_code == 0
         assert "Version:" in result.output
         assert "Group:" in result.output
@@ -243,23 +244,23 @@ class TestAddDepShowAll:
         mock_dep_mgr.add_dependency.return_value = {
             "success": True,
             "dependency_string": "requests>=2.28.0",
-            "target": "dependencies"
+            "target": "dependencies",
         }
         mock_dep_mgr.sync_environment.return_value = {"success": True}
         mock_dep_mgr_class.return_value = mock_dep_mgr
-        
+
         mock_load_config.return_value = {}
-        
+
         mock_agent = MagicMock()
         mock_agent.run_task.return_value = {
             "success": True,
             "selected_suggestion": 'ACTION:\n{"package": "requests", "version": ">=2.28.0"}',
-            "selected_agent": "Agent1"
+            "selected_agent": "Agent1",
         }
         mock_agent_class.return_value = mock_agent
-        
+
         result = cli_runner.invoke(add_dep, ["add", "requests"], input="y\n")
-        
+
         assert result.exit_code == 0
         assert "requests>=2.28.0" in result.output
         assert "Done!" in result.output
@@ -273,24 +274,21 @@ class TestAddDepShowAll:
         """Test handling of dependency addition failure."""
         mock_dep_mgr = MagicMock()
         mock_dep_mgr.get_current_dependencies.return_value = {"main": [], "optional": {}}
-        mock_dep_mgr.add_dependency.return_value = {
-            "success": False,
-            "error": "File not found"
-        }
+        mock_dep_mgr.add_dependency.return_value = {"success": False, "error": "File not found"}
         mock_dep_mgr_class.return_value = mock_dep_mgr
-        
+
         mock_load_config.return_value = {}
-        
+
         mock_agent = MagicMock()
         mock_agent.run_task.return_value = {
             "success": True,
             "selected_suggestion": 'ACTION:\n{"package": "requests"}',
-            "selected_agent": "Agent1"
+            "selected_agent": "Agent1",
         }
         mock_agent_class.return_value = mock_agent
-        
+
         result = cli_runner.invoke(add_dep, ["add", "requests"], input="y\n")
-        
+
         assert result.exit_code != 0
 
     @patch("hatch_agent.commands.add_dependency.Agent")
@@ -303,19 +301,19 @@ class TestAddDepShowAll:
         mock_dep_mgr = MagicMock()
         mock_dep_mgr.get_current_dependencies.return_value = {"main": [], "optional": {}}
         mock_dep_mgr_class.return_value = mock_dep_mgr
-        
+
         mock_load_config.return_value = {}
-        
+
         mock_agent = MagicMock()
         mock_agent.run_task.return_value = {
             "success": True,
             "selected_suggestion": 'ACTION:\n{"package": "requests"}',
-            "selected_agent": "Agent1"
+            "selected_agent": "Agent1",
         }
         mock_agent_class.return_value = mock_agent
-        
+
         result = cli_runner.invoke(add_dep, ["add", "requests"], input="n\n")
-        
+
         assert result.exit_code == 0
         assert "Cancelled" in result.output
 
@@ -331,22 +329,22 @@ class TestAddDepShowAll:
         mock_dep_mgr.add_dependency.return_value = {
             "success": True,
             "dependency_string": "requests",
-            "target": "dependencies"
+            "target": "dependencies",
         }
         mock_dep_mgr_class.return_value = mock_dep_mgr
-        
+
         mock_load_config.return_value = {}
-        
+
         mock_agent = MagicMock()
         mock_agent.run_task.return_value = {
             "success": True,
             "selected_suggestion": 'ACTION:\n{"package": "requests"}',
-            "selected_agent": "Agent1"
+            "selected_agent": "Agent1",
         }
         mock_agent_class.return_value = mock_agent
-        
+
         result = cli_runner.invoke(add_dep, ["add", "requests", "--skip-sync"], input="y\n")
-        
+
         assert result.exit_code == 0
         assert "Skipped environment sync" in result.output
         mock_dep_mgr.sync_environment.assert_not_called()
@@ -363,23 +361,22 @@ class TestAddDepShowAll:
         mock_dep_mgr.add_dependency.return_value = {
             "success": True,
             "dependency_string": "requests",
-            "target": "dependencies"
+            "target": "dependencies",
         }
         mock_dep_mgr.sync_environment.return_value = {"success": False, "error": "Sync failed"}
         mock_dep_mgr_class.return_value = mock_dep_mgr
-        
+
         mock_load_config.return_value = {}
-        
+
         mock_agent = MagicMock()
         mock_agent.run_task.return_value = {
             "success": True,
             "selected_suggestion": 'ACTION:\n{"package": "requests"}',
-            "selected_agent": "Agent1"
+            "selected_agent": "Agent1",
         }
         mock_agent_class.return_value = mock_agent
-        
+
         result = cli_runner.invoke(add_dep, ["add", "requests"], input="y\n")
-        
+
         assert result.exit_code == 0
         assert "sync had issues" in result.output
-

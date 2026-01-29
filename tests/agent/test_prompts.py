@@ -1,7 +1,5 @@
 """Tests for agent prompts."""
 
-import pytest
-
 from hatch_agent.agent.prompts import default_prompt, system_prompt_factory
 
 
@@ -62,11 +60,11 @@ class TestSystemPromptFactory:
         """Test that different roles produce different prompts."""
         factory1 = system_prompt_factory("ConfigExpert")
         factory2 = system_prompt_factory("BuildExpert")
-        
+
         body = "Same task"
         result1 = factory1(body)
         result2 = factory2(body)
-        
+
         assert result1 != result2
         assert "ConfigExpert" in result1
         assert "BuildExpert" in result2
@@ -78,4 +76,3 @@ class TestSystemPromptFactory:
         result = factory(body)
         assert "Line 1" in result
         assert "Line 4" in result
-

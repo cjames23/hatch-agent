@@ -1,7 +1,7 @@
 """Tests for dependency sync analyzer."""
 
 from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch, PropertyMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -66,7 +66,7 @@ class TestDependencySync:
         """Test get_installer returns 'pip' when use_uv is False."""
         mock_hatch_env.use_uv = False
         mock_hatch_app.get_environment.return_value = mock_hatch_env
-        
+
         installer = sync_manager.get_installer()
         assert installer == "pip"
 
@@ -74,21 +74,21 @@ class TestDependencySync:
         """Test get_installer returns 'uv' when use_uv is True."""
         mock_hatch_env.use_uv = True
         mock_hatch_app.get_environment.return_value = mock_hatch_env
-        
+
         installer = sync_manager.get_installer()
         assert installer == "uv"
 
     def test_get_dependencies(self, sync_manager, mock_hatch_app, mock_hatch_env):
         """Test get_dependencies returns environment dependencies."""
         mock_hatch_app.get_environment.return_value = mock_hatch_env
-        
+
         deps = sync_manager.get_dependencies()
         assert deps == ["requests>=2.28.0", "click>=8.0.0"]
 
     def test_get_environment_info(self, sync_manager, mock_hatch_app, mock_hatch_env):
         """Test get_environment_info returns correct info."""
         mock_hatch_app.get_environment.return_value = mock_hatch_env
-        
+
         info = sync_manager.get_environment_info()
         assert info["name"] == "default"
         assert info["installer"] == "pip"
@@ -101,19 +101,17 @@ class TestDependencySync:
         """Test ensure_environment_exists when env already exists."""
         mock_hatch_env.exists.return_value = True
         mock_hatch_app.get_environment.return_value = mock_hatch_env
-        
+
         result = sync_manager.ensure_environment_exists()
         assert result["success"] is True
         assert result["action"] == "exists"
         mock_hatch_env.create.assert_not_called()
 
-    def test_ensure_environment_exists_creates(
-        self, sync_manager, mock_hatch_app, mock_hatch_env
-    ):
+    def test_ensure_environment_exists_creates(self, sync_manager, mock_hatch_app, mock_hatch_env):
         """Test ensure_environment_exists creates env when missing."""
         mock_hatch_env.exists.return_value = False
         mock_hatch_app.get_environment.return_value = mock_hatch_env
-        
+
         result = sync_manager.ensure_environment_exists()
         assert result["success"] is True
         assert result["action"] == "created"
@@ -132,7 +130,7 @@ class TestVersionComparison:
         """Test compare_versions with no changes."""
         before = {"requests": "2.28.0", "click": "8.0.0"}
         after = {"requests": "2.28.0", "click": "8.0.0"}
-        
+
         updates = sync_manager.compare_versions(before, after)
         assert len(updates) == 0
 
@@ -140,7 +138,7 @@ class TestVersionComparison:
         """Test compare_versions identifies updates."""
         before = {"requests": "2.28.0", "click": "8.0.0"}
         after = {"requests": "2.31.0", "click": "8.0.0"}
-        
+
         updates = sync_manager.compare_versions(before, after)
         assert len(updates) == 1
         assert updates[0]["package"] == "requests"
@@ -151,7 +149,7 @@ class TestVersionComparison:
         """Test compare_versions identifies new packages."""
         before = {"requests": "2.28.0"}
         after = {"requests": "2.28.0", "httpx": "0.24.0"}
-        
+
         updates = sync_manager.compare_versions(before, after)
         assert len(updates) == 1
         assert updates[0]["package"] == "httpx"
@@ -224,18 +222,18 @@ class TestUpgradeExecution:
         env.dependencies = ["requests>=2.28.0"]
         env.exists.return_value = True
         env.construct_pip_install_command.return_value = ["pip", "install"]
-        
+
         # Mock platform.run_command
         mock_result = MagicMock()
         mock_result.returncode = 0
         mock_result.stdout = b"Successfully installed requests-2.31.0"
         mock_result.stderr = b""
         env.platform.run_command.return_value = mock_result
-        
+
         # Mock command_context
         env.command_context.return_value.__enter__ = MagicMock()
         env.command_context.return_value.__exit__ = MagicMock()
-        
+
         return env
 
     @pytest.fixture
@@ -246,7 +244,7 @@ class TestUpgradeExecution:
     def test_run_upgrade_success(self, sync_manager, mock_hatch_app, mock_hatch_env):
         """Test successful upgrade execution."""
         mock_hatch_app.get_environment.return_value = mock_hatch_env
-        
+
         result = sync_manager.run_upgrade()
         assert result["success"] is True
         assert result["action"] == "upgraded"
@@ -254,7 +252,7 @@ class TestUpgradeExecution:
     def test_run_upgrade_dry_run(self, sync_manager, mock_hatch_app, mock_hatch_env):
         """Test dry-run upgrade."""
         mock_hatch_app.get_environment.return_value = mock_hatch_env
-        
+
         result = sync_manager.run_upgrade(dry_run=True)
         assert result["success"] is True
         assert result["action"] == "dry_run"
@@ -263,17 +261,15 @@ class TestUpgradeExecution:
         """Test upgrade with no dependencies."""
         mock_hatch_env.dependencies = []
         mock_hatch_app.get_environment.return_value = mock_hatch_env
-        
+
         result = sync_manager.run_upgrade()
         assert result["success"] is True
         assert result["action"] == "none"
 
-    def test_run_upgrade_specific_packages(
-        self, sync_manager, mock_hatch_app, mock_hatch_env
-    ):
+    def test_run_upgrade_specific_packages(self, sync_manager, mock_hatch_app, mock_hatch_env):
         """Test upgrade with specific packages."""
         mock_hatch_app.get_environment.return_value = mock_hatch_env
-        
+
         result = sync_manager.run_upgrade(packages=["requests"])
         assert result["success"] is True
         mock_hatch_env.construct_pip_install_command.assert_called()
@@ -286,7 +282,7 @@ class TestUpgradeExecution:
         mock_result.stderr = b"Error: Package not found"
         mock_hatch_env.platform.run_command.return_value = mock_result
         mock_hatch_app.get_environment.return_value = mock_hatch_env
-        
+
         result = sync_manager.run_upgrade()
         assert result["success"] is False
         assert result["action"] == "failed"
@@ -315,11 +311,11 @@ class TestEnvironmentCaching:
         mock_env.use_uv = False
         mock_env.dependencies = []
         mock_hatch_app.get_environment.return_value = mock_env
-        
+
         # Call twice
         env1 = sync_manager._get_environment()
         env2 = sync_manager._get_environment()
-        
+
         # Should only call get_environment once due to caching
         assert mock_hatch_app.get_environment.call_count == 1
         assert env1 is env2
@@ -330,12 +326,12 @@ class TestEnvironmentCaching:
         mock_env_default.name = "default"
         mock_env_dev = MagicMock()
         mock_env_dev.name = "dev"
-        
+
         mock_hatch_app.get_environment.side_effect = [mock_env_default, mock_env_dev]
-        
+
         env1 = sync_manager._get_environment("default")
         env2 = sync_manager._get_environment("dev")
-        
+
         assert env1.name == "default"
         assert env2.name == "dev"
         assert env1 is not env2

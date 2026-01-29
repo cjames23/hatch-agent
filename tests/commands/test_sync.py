@@ -1,17 +1,15 @@
 """Tests for sync command."""
 
-from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
-import json
+from unittest.mock import MagicMock, patch
 
 import pytest
 from click.testing import CliRunner
 
 from hatch_agent.commands.sync import (
-    sync,
+    _apply_code_changes,
     _build_update_task,
     _extract_update_plan,
-    _apply_code_changes,
+    sync,
 )
 
 
@@ -58,9 +56,9 @@ class TestSyncCommand:
         """Test sync command when no updates are available."""
         mock_sync_class.return_value = mock_sync_manager
         mock_load_config.return_value = {"underlying_provider": "openai"}
-        
+
         result = cli_runner.invoke(sync)
-        
+
         assert result.exit_code == 0
         assert "up to date" in result.output or "Dependency sync complete" in result.output
 
@@ -85,9 +83,9 @@ class TestSyncCommand:
         ]
         mock_sync_class.return_value = mock_sync_manager
         mock_load_config.return_value = {"underlying_provider": "openai"}
-        
+
         result = cli_runner.invoke(sync, ["--skip-analysis"])
-        
+
         assert result.exit_code == 0
         assert "UPDATED PACKAGES" in result.output
 
@@ -95,9 +93,9 @@ class TestSyncCommand:
     def test_sync_dry_run(self, mock_sync_class, cli_runner, mock_sync_manager):
         """Test sync command with --dry-run flag."""
         mock_sync_class.return_value = mock_sync_manager
-        
+
         result = cli_runner.invoke(sync, ["--dry-run"])
-        
+
         assert result.exit_code == 0
         assert "DRY RUN" in result.output
 
@@ -110,16 +108,14 @@ class TestSyncCommand:
             "action": "failed",
         }
         mock_sync_class.return_value = mock_sync_manager
-        
+
         result = cli_runner.invoke(sync)
-        
+
         assert result.exit_code != 0
         assert "failed" in result.output.lower() or "error" in result.output.lower()
 
     @patch("hatch_agent.commands.sync.DependencySync")
-    def test_sync_env_creation_failure(
-        self, mock_sync_class, cli_runner, mock_sync_manager
-    ):
+    def test_sync_env_creation_failure(self, mock_sync_class, cli_runner, mock_sync_manager):
         """Test sync command when environment creation fails."""
         mock_sync_manager.ensure_environment_exists.return_value = {
             "success": False,
@@ -127,9 +123,9 @@ class TestSyncCommand:
             "action": "failed",
         }
         mock_sync_class.return_value = mock_sync_manager
-        
+
         result = cli_runner.invoke(sync)
-        
+
         assert result.exit_code != 0
 
     @patch("hatch_agent.commands.sync.DependencySync")
@@ -152,9 +148,9 @@ class TestSyncCommand:
         ]
         mock_sync_class.return_value = mock_sync_manager
         mock_load_config.return_value = {"underlying_provider": "openai"}
-        
+
         result = cli_runner.invoke(sync, ["--skip-analysis"])
-        
+
         assert result.exit_code == 0
         assert "Skipping breaking changes analysis" in result.output
 
@@ -184,9 +180,9 @@ class TestSyncCommand:
         ]
         mock_sync_class.return_value = mock_sync_manager
         mock_load_config.return_value = {"underlying_provider": "openai"}
-        
+
         result = cli_runner.invoke(sync, ["--major-only", "--skip-analysis"])
-        
+
         assert result.exit_code == 0
         # When --skip-analysis is used, the command returns early before
         # printing the --major-only analysis message. Just verify the command succeeded.
@@ -199,7 +195,7 @@ class TestBuildUpdateTask:
     def test_build_update_task_basic(self):
         """Test basic update task generation."""
         task = _build_update_task("requests", "2.28.0", "2.31.0")
-        
+
         assert "requests" in task
         assert "2.28.0" in task
         assert "2.31.0" in task
@@ -208,7 +204,7 @@ class TestBuildUpdateTask:
     def test_build_update_task_includes_requirements(self):
         """Test that task includes critical requirements."""
         task = _build_update_task("django", "3.0.0", "4.0.0")
-        
+
         assert "breaking" in task.lower()
         assert "minimal" in task.lower() or "ONLY" in task
         assert "API compatibility" in task
@@ -236,9 +232,9 @@ class TestExtractUpdatePlan:
             ]
         }
         """
-        
+
         plan = _extract_update_plan(suggestion)
-        
+
         assert plan is not None
         assert plan["version_spec"] == ">=2.31.0"
         assert len(plan["breaking_changes"]) == 1
@@ -247,9 +243,9 @@ class TestExtractUpdatePlan:
     def test_extract_update_plan_no_marker(self):
         """Test extraction with no UPDATE_PLAN marker."""
         suggestion = "Just some text without the plan marker"
-        
+
         plan = _extract_update_plan(suggestion)
-        
+
         assert plan is None
 
     def test_extract_update_plan_invalid_json(self):
@@ -258,9 +254,9 @@ class TestExtractUpdatePlan:
         UPDATE_PLAN:
         {invalid json here}
         """
-        
+
         plan = _extract_update_plan(suggestion)
-        
+
         assert plan is None
 
     def test_extract_update_plan_empty_arrays(self):
@@ -273,9 +269,9 @@ class TestExtractUpdatePlan:
             "code_changes": []
         }
         """
-        
+
         plan = _extract_update_plan(suggestion)
-        
+
         assert plan is not None
         assert plan["breaking_changes"] == []
         assert plan["code_changes"] == []
@@ -314,14 +310,12 @@ class TestApplyCodeChanges:
                 "reason": "API change",
             }
         ]
-        
+
         result = _apply_code_changes(changes, tmp_path, mock_agent, {})
         assert result == 0
         mock_agent.run_task.assert_not_called()
 
-    def test_apply_code_changes_success(
-        self, mock_agent, tmp_path, temp_source_file
-    ):
+    def test_apply_code_changes_success(self, mock_agent, tmp_path, temp_source_file):
         """Test successful code change application."""
         changes = [
             {
@@ -332,18 +326,16 @@ class TestApplyCodeChanges:
                 "package": "requests",
             }
         ]
-        
+
         result = _apply_code_changes(changes, tmp_path, mock_agent, {})
-        
+
         assert result == 1
         mock_agent.run_task.assert_called_once()
 
-    def test_apply_code_changes_agent_failure(
-        self, mock_agent, tmp_path, temp_source_file
-    ):
+    def test_apply_code_changes_agent_failure(self, mock_agent, tmp_path, temp_source_file):
         """Test when agent fails to generate changes."""
         mock_agent.run_task.return_value = {"success": False, "output": "Error"}
-        
+
         changes = [
             {
                 "file": "src/app.py",
@@ -351,9 +343,9 @@ class TestApplyCodeChanges:
                 "reason": "API change",
             }
         ]
-        
+
         result = _apply_code_changes(changes, tmp_path, mock_agent, {})
-        
+
         # Still returns 0 because change was not applied successfully
         assert result == 0
 
@@ -407,16 +399,14 @@ class TestUpdateClassification:
         ]
         mock_sync_class.return_value = mock_sync_manager
         mock_load_config.return_value = {}
-        
+
         result = cli_runner.invoke(sync, ["--skip-analysis"])
-        
+
         assert "major" in result.output.lower()
 
     @patch("hatch_agent.commands.sync.DependencySync")
     @patch("hatch_agent.commands.sync.load_config")
-    def test_summary_counts(
-        self, mock_load_config, mock_sync_class, cli_runner, mock_sync_manager
-    ):
+    def test_summary_counts(self, mock_load_config, mock_sync_class, cli_runner, mock_sync_manager):
         """Test that summary shows correct counts."""
         mock_sync_manager.compare_versions.return_value = [
             {"package": "a", "old_version": "1.0", "new_version": "2.0", "change_type": "major"},
@@ -429,9 +419,9 @@ class TestUpdateClassification:
         ]
         mock_sync_class.return_value = mock_sync_manager
         mock_load_config.return_value = {}
-        
+
         result = cli_runner.invoke(sync, ["--skip-analysis"])
-        
+
         assert "1 major" in result.output
         assert "1 minor" in result.output
         assert "1 patch" in result.output
@@ -462,24 +452,34 @@ class TestSyncAnalysis:
     @patch("hatch_agent.commands.sync.DependencySync")
     @patch("hatch_agent.commands.sync.load_config")
     def test_analysis_with_breaking_changes(
-        self, mock_load_config, mock_sync_class, mock_updater_class, mock_agent_class,
-        cli_runner, mock_sync_manager
+        self,
+        mock_load_config,
+        mock_sync_class,
+        mock_updater_class,
+        mock_agent_class,
+        cli_runner,
+        mock_sync_manager,
     ):
         """Test sync with analysis that finds breaking changes."""
         mock_sync_manager.compare_versions.return_value = [
-            {"package": "requests", "old_version": "1.0", "new_version": "2.0", "change_type": "major"}
+            {
+                "package": "requests",
+                "old_version": "1.0",
+                "new_version": "2.0",
+                "change_type": "major",
+            }
         ]
         mock_sync_manager.get_installed_versions.side_effect = [
             {"requests": "1.0"},
             {"requests": "2.0"},
         ]
         mock_sync_class.return_value = mock_sync_manager
-        
+
         mock_updater = MagicMock()
         mock_updater.get_changelog_url.return_value = "https://example.com/changelog"
         mock_updater.get_project_files.return_value = []
         mock_updater_class.return_value = mock_updater
-        
+
         mock_agent = MagicMock()
         mock_agent.run_task.return_value = {
             "success": True,
@@ -490,14 +490,14 @@ class TestSyncAnalysis:
                 "breaking_changes": ["API changed"],
                 "code_changes": []
             }
-            """
+            """,
         }
         mock_agent_class.return_value = mock_agent
-        
+
         mock_load_config.return_value = {}
-        
+
         result = cli_runner.invoke(sync, ["--no-code-changes"])
-        
+
         assert result.exit_code == 0
         assert "BREAKING CHANGES" in result.output
         assert "API changed" in result.output or "potential breaking change" in result.output
@@ -507,12 +507,22 @@ class TestSyncAnalysis:
     @patch("hatch_agent.commands.sync.DependencySync")
     @patch("hatch_agent.commands.sync.load_config")
     def test_analysis_no_packages_to_analyze(
-        self, mock_load_config, mock_sync_class, mock_updater_class, mock_agent_class,
-        cli_runner, mock_sync_manager
+        self,
+        mock_load_config,
+        mock_sync_class,
+        mock_updater_class,
+        mock_agent_class,
+        cli_runner,
+        mock_sync_manager,
     ):
         """Test sync when only patch updates (no analysis needed)."""
         mock_sync_manager.compare_versions.return_value = [
-            {"package": "requests", "old_version": "2.0.0", "new_version": "2.0.1", "change_type": "patch"}
+            {
+                "package": "requests",
+                "old_version": "2.0.0",
+                "new_version": "2.0.1",
+                "change_type": "patch",
+            }
         ]
         mock_sync_manager.get_installed_versions.side_effect = [
             {"requests": "2.0.0"},
@@ -520,9 +530,9 @@ class TestSyncAnalysis:
         ]
         mock_sync_class.return_value = mock_sync_manager
         mock_load_config.return_value = {}
-        
+
         result = cli_runner.invoke(sync)
-        
+
         assert result.exit_code == 0
         assert "No packages require breaking changes analysis" in result.output
 
@@ -536,9 +546,9 @@ class TestSyncAnalysis:
         mock_sync_manager.compare_versions.return_value = []
         mock_sync_manager.run_upgrade.return_value = {"success": True, "action": "none"}
         mock_sync_class.return_value = mock_sync_manager
-        
+
         result = cli_runner.invoke(sync)
-        
+
         assert "Created environment" in result.output
 
     @patch("hatch_agent.commands.sync.DependencySync")
@@ -548,17 +558,24 @@ class TestSyncAnalysis:
         mock_sync_manager.compare_versions.return_value = []
         mock_sync_manager.run_upgrade.return_value = {"success": True, "action": "none"}
         mock_sync_class.return_value = mock_sync_manager
-        
+
         result = cli_runner.invoke(sync)
-        
+
         assert result.exit_code == 0
 
     @patch("hatch_agent.commands.sync.DependencySync")
     @patch("hatch_agent.commands.sync.load_config")
-    def test_sync_new_package(self, mock_load_config, mock_sync_class, cli_runner, mock_sync_manager):
+    def test_sync_new_package(
+        self, mock_load_config, mock_sync_class, cli_runner, mock_sync_manager
+    ):
         """Test sync displays new packages correctly."""
         mock_sync_manager.compare_versions.return_value = [
-            {"package": "new-pkg", "old_version": None, "new_version": "1.0.0", "change_type": "new"}
+            {
+                "package": "new-pkg",
+                "old_version": None,
+                "new_version": "1.0.0",
+                "change_type": "new",
+            }
         ]
         mock_sync_manager.get_installed_versions.side_effect = [
             {},
@@ -566,9 +583,9 @@ class TestSyncAnalysis:
         ]
         mock_sync_class.return_value = mock_sync_manager
         mock_load_config.return_value = {}
-        
+
         result = cli_runner.invoke(sync, ["--skip-analysis"])
-        
+
         assert "new" in result.output.lower()
 
 
@@ -583,7 +600,10 @@ class TestSyncCodeChanges:
     def mock_sync_manager(self):
         manager = MagicMock()
         manager.get_environment_info.return_value = {
-            "name": "default", "installer": "pip", "exists": True, "dependencies_count": 5
+            "name": "default",
+            "installer": "pip",
+            "exists": True,
+            "dependencies_count": 5,
         }
         manager.ensure_environment_exists.return_value = {"success": True, "action": "exists"}
         manager.run_upgrade.return_value = {"success": True, "action": "upgraded"}
@@ -594,8 +614,13 @@ class TestSyncCodeChanges:
     @patch("hatch_agent.commands.sync.DependencySync")
     @patch("hatch_agent.commands.sync.load_config")
     def test_sync_with_code_changes_declined(
-        self, mock_load_config, mock_sync_class, mock_updater_class, mock_agent_class,
-        cli_runner, mock_sync_manager
+        self,
+        mock_load_config,
+        mock_sync_class,
+        mock_updater_class,
+        mock_agent_class,
+        cli_runner,
+        mock_sync_manager,
     ):
         """Test sync with code changes that user declines."""
         mock_sync_manager.compare_versions.return_value = [
@@ -603,12 +628,12 @@ class TestSyncCodeChanges:
         ]
         mock_sync_manager.get_installed_versions.side_effect = [{"pkg": "1.0"}, {"pkg": "2.0"}]
         mock_sync_class.return_value = mock_sync_manager
-        
+
         mock_updater = MagicMock()
         mock_updater.get_changelog_url.return_value = None
         mock_updater.get_project_files.return_value = []
         mock_updater_class.return_value = mock_updater
-        
+
         mock_agent = MagicMock()
         mock_agent.run_task.return_value = {
             "success": True,
@@ -619,14 +644,14 @@ class TestSyncCodeChanges:
                 "breaking_changes": [],
                 "code_changes": [{"file": "app.py", "description": "Update", "reason": "API changed"}]
             }
-            """
+            """,
         }
         mock_agent_class.return_value = mock_agent
         mock_load_config.return_value = {}
-        
+
         # Decline code changes
         result = cli_runner.invoke(sync, input="n\n")
-        
+
         assert result.exit_code == 0
         assert "Suggested code changes" in result.output
 
@@ -635,8 +660,13 @@ class TestSyncCodeChanges:
     @patch("hatch_agent.commands.sync.DependencySync")
     @patch("hatch_agent.commands.sync.load_config")
     def test_sync_analysis_failure(
-        self, mock_load_config, mock_sync_class, mock_updater_class, mock_agent_class,
-        cli_runner, mock_sync_manager
+        self,
+        mock_load_config,
+        mock_sync_class,
+        mock_updater_class,
+        mock_agent_class,
+        cli_runner,
+        mock_sync_manager,
     ):
         """Test sync when analysis fails for a package."""
         mock_sync_manager.compare_versions.return_value = [
@@ -644,18 +674,18 @@ class TestSyncCodeChanges:
         ]
         mock_sync_manager.get_installed_versions.side_effect = [{"pkg": "1.0"}, {"pkg": "2.0"}]
         mock_sync_class.return_value = mock_sync_manager
-        
+
         mock_updater = MagicMock()
         mock_updater.get_changelog_url.return_value = None
         mock_updater.get_project_files.return_value = []
         mock_updater_class.return_value = mock_updater
-        
+
         mock_agent = MagicMock()
         mock_agent.run_task.return_value = {"success": False, "output": "Error"}
         mock_agent_class.return_value = mock_agent
         mock_load_config.return_value = {}
-        
+
         result = cli_runner.invoke(sync, ["--no-code-changes"])
-        
+
         assert result.exit_code == 0
         assert "Analysis failed" in result.output

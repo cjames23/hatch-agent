@@ -1,10 +1,10 @@
 """Environment configuration generation utilities."""
 
-from typing import Dict, Any
 import json
+from typing import Any
 
 
-def generate_environment(metadata: Dict[str, Any], out_path: str) -> bool:
+def generate_environment(metadata: dict[str, Any], out_path: str) -> bool:
     """Generate a small environment JSON file from project metadata.
 
     Returns True on success.
@@ -15,4 +15,3 @@ def generate_environment(metadata: Dict[str, Any], out_path: str) -> bool:
         return True
     except Exception:
         return False
-

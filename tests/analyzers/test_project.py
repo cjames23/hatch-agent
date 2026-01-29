@@ -1,10 +1,5 @@
 """Tests for project analysis."""
 
-from pathlib import Path
-from unittest.mock import MagicMock, patch
-
-import pytest
-
 from hatch_agent.analyzers.project import analyze_project
 
 
@@ -22,9 +17,9 @@ name = "test-project"
 version = "1.0.0"
 dependencies = ["requests>=2.0"]
 """)
-        
+
         result = analyze_project(str(temp_project_dir))
-        
+
         assert "src" in result["dirs"]
         assert "tests" in result["dirs"]
         assert "pyproject.toml" in result["files"]
@@ -35,9 +30,9 @@ dependencies = ["requests>=2.0"]
         """Test analyzing project without pyproject.toml."""
         (temp_project_dir / "src").mkdir()
         (temp_project_dir / "README.md").touch()
-        
+
         result = analyze_project(str(temp_project_dir))
-        
+
         assert "src" in result["dirs"]
         assert "README.md" in result["files"]
         assert result["pyproject"] is None
@@ -46,16 +41,16 @@ dependencies = ["requests>=2.0"]
         """Test analyzing empty directory."""
         empty_dir = temp_project_dir / "empty"
         empty_dir.mkdir()
-        
+
         result = analyze_project(str(empty_dir))
-        
+
         assert result["files"] == []
         assert result["dirs"] == []
 
     def test_analyze_project_dir_not_found(self, temp_project_dir):
         """Test analyzing non-existent directory."""
         result = analyze_project(str(temp_project_dir / "nonexistent"))
-        
+
         assert "error" in result
         assert "not found" in result["error"]
 
@@ -67,9 +62,9 @@ dependencies = ["requests>=2.0"]
 name = "test"
 dependencies = ["click>=8.0"]
 """)
-        
+
         result = analyze_project(str(temp_project_dir))
-        
+
         assert "dependencies" in result
         assert "click>=8.0" in result["dependencies"]["dependencies"]
 
@@ -199,4 +194,3 @@ class TestProjectStatistics:
         """Test counting dependencies."""
         dep_count = len(mock_project_metadata["dependencies"])
         assert dep_count > 0
-

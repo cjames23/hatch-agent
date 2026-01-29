@@ -1,11 +1,10 @@
 """Tests for multi-agent coordination."""
 
-from unittest.mock import MagicMock, Mock, patch
-import json
+from unittest.mock import MagicMock, patch
 
 import pytest
 
-from hatch_agent.agent.multi_agent import MultiAgentOrchestrator, AgentResponse
+from hatch_agent.agent.multi_agent import AgentResponse, MultiAgentOrchestrator
 
 
 class TestAgentResponse:
@@ -17,7 +16,7 @@ class TestAgentResponse:
             agent_name="TestAgent",
             suggestion="Use requests library",
             reasoning="It's well-maintained",
-            confidence=0.95
+            confidence=0.95,
         )
         assert response.agent_name == "TestAgent"
         assert response.suggestion == "Use requests library"
@@ -27,15 +26,12 @@ class TestAgentResponse:
     def test_agent_response_attributes(self):
         """Test AgentResponse has all expected attributes."""
         response = AgentResponse(
-            agent_name="Agent1",
-            suggestion="Suggestion",
-            reasoning="Reasoning",
-            confidence=0.8
+            agent_name="Agent1", suggestion="Suggestion", reasoning="Reasoning", confidence=0.8
         )
-        assert hasattr(response, 'agent_name')
-        assert hasattr(response, 'suggestion')
-        assert hasattr(response, 'reasoning')
-        assert hasattr(response, 'confidence')
+        assert hasattr(response, "agent_name")
+        assert hasattr(response, "suggestion")
+        assert hasattr(response, "reasoning")
+        assert hasattr(response, "confidence")
 
 
 class TestMultiAgentOrchestratorInit:
@@ -67,14 +63,12 @@ class TestMultiAgentOrchestratorCreateAgent:
         """Test _create_agent returns a StrandsAgent."""
         mock_agent = MagicMock()
         mock_strands.return_value = mock_agent
-        
+
         orchestrator = MultiAgentOrchestrator()
         agent = orchestrator._create_agent(
-            name="TestAgent",
-            role="Test role",
-            instructions="Test instructions"
+            name="TestAgent", role="Test role", instructions="Test instructions"
         )
-        
+
         assert agent is mock_agent
         mock_strands.assert_called_once()
 
@@ -83,11 +77,9 @@ class TestMultiAgentOrchestratorCreateAgent:
         """Test _create_agent passes correct system prompt."""
         orchestrator = MultiAgentOrchestrator()
         orchestrator._create_agent(
-            name="ConfigAgent",
-            role="Configuration expert",
-            instructions="Analyze configs"
+            name="ConfigAgent", role="Configuration expert", instructions="Analyze configs"
         )
-        
+
         call_kwargs = mock_strands.call_args[1]
         assert "system_prompt" in call_kwargs
         assert "Configuration expert" in call_kwargs["system_prompt"]
@@ -97,56 +89,50 @@ class TestMultiAgentOrchestratorCreateAgent:
 class TestMultiAgentOrchestratorRun:
     """Test run method."""
 
-    @patch.object(MultiAgentOrchestrator, '_judge_suggestions')
-    @patch.object(MultiAgentOrchestrator, '_get_agent_response')
-    @patch.object(MultiAgentOrchestrator, '_create_agent')
+    @patch.object(MultiAgentOrchestrator, "_judge_suggestions")
+    @patch.object(MultiAgentOrchestrator, "_get_agent_response")
+    @patch.object(MultiAgentOrchestrator, "_create_agent")
     def test_run_general_task(self, mock_create, mock_get_response, mock_judge):
         """Test run with general task."""
         mock_agent = MagicMock()
         mock_create.return_value = mock_agent
-        
+
         mock_get_response.return_value = AgentResponse(
-            agent_name="Agent1",
-            suggestion="Suggestion",
-            reasoning="Reason",
-            confidence=0.9
+            agent_name="Agent1", suggestion="Suggestion", reasoning="Reason", confidence=0.9
         )
-        
+
         mock_judge.return_value = {
             "suggestion": "Best suggestion",
             "agent_name": "Agent1",
-            "reasoning": "Best choice"
+            "reasoning": "Best choice",
         }
-        
+
         orchestrator = MultiAgentOrchestrator()
         result = orchestrator.run("Configure hatch project")
-        
+
         assert result["success"] is True
         assert result["selected_suggestion"] == "Best suggestion"
         assert "all_suggestions" in result
         assert len(result["all_suggestions"]) == 2  # Two specialist agents
 
-    @patch.object(MultiAgentOrchestrator, '_run_update_agents')
+    @patch.object(MultiAgentOrchestrator, "_run_update_agents")
     def test_run_detects_update_task(self, mock_update_agents):
         """Test run routes update tasks to specialized agents."""
-        mock_update_agents.return_value = {
-            "success": True,
-            "selected_suggestion": "Update plan"
-        }
-        
+        mock_update_agents.return_value = {"success": True, "selected_suggestion": "Update plan"}
+
         orchestrator = MultiAgentOrchestrator()
         orchestrator.run("updating the dependency requests to 2.31.0")
-        
+
         mock_update_agents.assert_called_once()
 
-    @patch.object(MultiAgentOrchestrator, '_run_update_agents')
+    @patch.object(MultiAgentOrchestrator, "_run_update_agents")
     def test_run_detects_update_strategy_task(self, mock_update_agents):
         """Test run routes update strategy tasks to specialized agents."""
         mock_update_agents.return_value = {"success": True, "selected_suggestion": "Plan"}
-        
+
         orchestrator = MultiAgentOrchestrator()
         orchestrator.run("What's the best update strategy for django?")
-        
+
         mock_update_agents.assert_called_once()
 
 
@@ -172,10 +158,7 @@ class TestBulkUpdateAnalysis:
     @pytest.fixture
     def orchestrator(self):
         """Create a MultiAgentOrchestrator instance."""
-        return MultiAgentOrchestrator(
-            provider_name="mock",
-            provider_config={}
-        )
+        return MultiAgentOrchestrator(provider_name="mock", provider_config={})
 
     @pytest.fixture
     def sample_updates(self):
@@ -203,11 +186,8 @@ class TestBulkUpdateAnalysis:
 
     def test_build_bulk_update_task(self, orchestrator, sample_updates):
         """Test _build_bulk_update_task generates correct task."""
-        task = orchestrator._build_bulk_update_task(
-            sample_updates[0],
-            sample_updates
-        )
-        
+        task = orchestrator._build_bulk_update_task(sample_updates[0], sample_updates)
+
         assert "requests" in task
         assert "2.28.0" in task
         assert "2.31.0" in task
@@ -219,7 +199,7 @@ class TestBulkUpdateAnalysis:
         """Test task for single package update."""
         updates = [{"package": "requests", "old_version": "2.0", "new_version": "3.0"}]
         task = orchestrator._build_bulk_update_task(updates[0], updates)
-        
+
         assert "requests" in task
         assert "Other packages" not in task  # No other packages
 
@@ -235,9 +215,9 @@ class TestBulkUpdateAnalysis:
             "code_changes": [{"file": "app.py", "description": "Update call"}]
         }
         """
-        
+
         plan = orchestrator._extract_update_plan(suggestion)
-        
+
         assert plan is not None
         assert plan["version_spec"] == ">=2.31.0"
         assert len(plan["breaking_changes"]) == 1
@@ -246,14 +226,14 @@ class TestBulkUpdateAnalysis:
     def test_extract_update_plan_no_marker(self, orchestrator):
         """Test _extract_update_plan without marker."""
         suggestion = "Just text without plan"
-        
+
         plan = orchestrator._extract_update_plan(suggestion)
         assert plan is None
 
     def test_extract_update_plan_invalid_json(self, orchestrator):
         """Test _extract_update_plan with invalid JSON."""
         suggestion = "UPDATE_PLAN:\n{not valid json}"
-        
+
         plan = orchestrator._extract_update_plan(suggestion)
         assert plan is None
 
@@ -263,7 +243,7 @@ class TestBulkUpdateAnalysis:
             {"file": "app.py", "line_range": "10-15", "description": "Change 1"},
             {"file": "views.py", "line_range": "20-25", "description": "Change 2"},
         ]
-        
+
         result = orchestrator._deduplicate_code_changes(changes)
         assert len(result) == 2
 
@@ -271,11 +251,16 @@ class TestBulkUpdateAnalysis:
         """Test _deduplicate_code_changes removes duplicates."""
         changes = [
             {"file": "app.py", "line_range": "10-15", "description": "Short", "package": "a"},
-            {"file": "app.py", "line_range": "10-15", "description": "Longer description", "package": "b"},
+            {
+                "file": "app.py",
+                "line_range": "10-15",
+                "description": "Longer description",
+                "package": "b",
+            },
         ]
-        
+
         result = orchestrator._deduplicate_code_changes(changes)
-        
+
         assert len(result) == 1
         # Should keep the one with longer description
         assert result[0]["description"] == "Longer description"
@@ -290,11 +275,11 @@ class TestBulkUpdateAnalysis:
             {"file": "app.py", "line_range": "10-15", "description": "Change"},
             {"file": "views.py", "line_range": "10-15", "description": "Change"},
         ]
-        
+
         result = orchestrator._deduplicate_code_changes(changes)
         assert len(result) == 2
 
-    @patch.object(MultiAgentOrchestrator, '_run_update_agents')
+    @patch.object(MultiAgentOrchestrator, "_run_update_agents")
     def test_run_bulk_update_analysis_success(
         self, mock_run_update, orchestrator, sample_updates, sample_context
     ):
@@ -311,15 +296,15 @@ class TestBulkUpdateAnalysis:
             }
             """,
         }
-        
+
         result = orchestrator.run_bulk_update_analysis(sample_updates, sample_context)
-        
+
         assert result["success"] is True
         assert result["packages_analyzed"] == 2
         assert len(result["breaking_changes"]) == 2  # One per package
         assert len(result["failed_packages"]) == 0
 
-    @patch.object(MultiAgentOrchestrator, '_run_update_agents')
+    @patch.object(MultiAgentOrchestrator, "_run_update_agents")
     def test_run_bulk_update_analysis_partial_failure(
         self, mock_run_update, orchestrator, sample_updates, sample_context
     ):
@@ -335,27 +320,27 @@ class TestBulkUpdateAnalysis:
             },
             {"success": False, "output": "Error"},
         ]
-        
+
         result = orchestrator.run_bulk_update_analysis(sample_updates, sample_context)
-        
+
         assert result["success"] is True
         assert result["packages_analyzed"] == 2
         assert len(result["failed_packages"]) == 1
         assert "django" in result["failed_packages"]
 
-    @patch.object(MultiAgentOrchestrator, '_run_update_agents')
+    @patch.object(MultiAgentOrchestrator, "_run_update_agents")
     def test_run_bulk_update_analysis_exception_handling(
         self, mock_run_update, orchestrator, sample_updates, sample_context
     ):
         """Test run_bulk_update_analysis handles exceptions."""
         mock_run_update.side_effect = Exception("Network error")
-        
+
         result = orchestrator.run_bulk_update_analysis(sample_updates, sample_context)
-        
+
         assert result["success"] is True  # Overall success despite failures
         assert len(result["failed_packages"]) == 2  # Both failed
 
-    @patch.object(MultiAgentOrchestrator, '_run_update_agents')
+    @patch.object(MultiAgentOrchestrator, "_run_update_agents")
     def test_run_bulk_update_analysis_aggregates_changes(
         self, mock_run_update, orchestrator, sample_updates, sample_context
     ):
@@ -384,14 +369,13 @@ class TestBulkUpdateAnalysis:
                 """,
             },
         ]
-        
+
         result = orchestrator.run_bulk_update_analysis(sample_updates, sample_context)
-        
+
         assert len(result["breaking_changes"]) == 2
         assert len(result["code_changes"]) == 2
-        
+
         # Verify package info is attached to breaking changes
         packages_in_breaking = {bc["package"] for bc in result["breaking_changes"]}
         assert "requests" in packages_in_breaking
         assert "django" in packages_in_breaking
-

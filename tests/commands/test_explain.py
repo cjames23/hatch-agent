@@ -1,14 +1,13 @@
 """Tests for explain command."""
 
-from unittest.mock import MagicMock, Mock, patch
-from click.testing import CliRunner
-import sys
 import importlib
+from unittest.mock import MagicMock, patch
 
 import pytest
+from click.testing import CliRunner
 
 # Import the actual module (not the command) using importlib
-explain_module = importlib.import_module('hatch_agent.commands.explain')
+explain_module = importlib.import_module("hatch_agent.commands.explain")
 explain = explain_module.explain
 _status_icon = explain_module._status_icon
 _build_explanation_task = explain_module._build_explanation_task
@@ -24,56 +23,60 @@ class TestExplainCLI:
 
     def test_explain_success(self, cli_runner, temp_project_dir):
         """Test successful explain command."""
-        with patch.object(explain_module, 'BuildAnalyzer') as mock_analyzer_class, \
-             patch.object(explain_module, 'load_config') as mock_load_config, \
-             patch.object(explain_module, 'Agent') as mock_agent_class:
+        with (
+            patch.object(explain_module, "BuildAnalyzer") as mock_analyzer_class,
+            patch.object(explain_module, "load_config") as mock_load_config,
+            patch.object(explain_module, "Agent") as mock_agent_class,
+        ):
             # Mock build analyzer
             mock_analyzer = MagicMock()
             mock_analyzer.analyze_build_failure.return_value = {
                 "test_result": {"success": True},
                 "format_result": {"success": True},
-                "type_result": {"success": True}
+                "type_result": {"success": True},
             }
             mock_analyzer_class.return_value = mock_analyzer
-            
+
             # Mock config
             mock_load_config.return_value = {}
-            
+
             # Mock agent
             mock_agent = MagicMock()
             mock_agent.run_task.return_value = {
                 "success": True,
                 "selected_suggestion": "All checks passed!",
                 "selected_agent": "Agent1",
-                "reasoning": "Good code"
+                "reasoning": "Good code",
             }
             mock_agent_class.return_value = mock_agent
-            
+
             result = cli_runner.invoke(explain, ["--project-root", str(temp_project_dir)])
-            
+
             assert result.exit_code == 0
             assert "ANALYSIS" in result.output
 
     def test_explain_failure(self, cli_runner, temp_project_dir):
         """Test explain command with analysis failure."""
-        with patch.object(explain_module, 'BuildAnalyzer') as mock_analyzer_class, \
-             patch.object(explain_module, 'load_config') as mock_load_config, \
-             patch.object(explain_module, 'Agent') as mock_agent_class:
+        with (
+            patch.object(explain_module, "BuildAnalyzer") as mock_analyzer_class,
+            patch.object(explain_module, "load_config") as mock_load_config,
+            patch.object(explain_module, "Agent") as mock_agent_class,
+        ):
             mock_analyzer = MagicMock()
             mock_analyzer.analyze_build_failure.return_value = {
                 "test_result": {"success": False, "exit_code": 1, "stderr": "Test failed"},
                 "format_result": {"success": True},
-                "type_result": {"success": True}
+                "type_result": {"success": True},
             }
             mock_analyzer_class.return_value = mock_analyzer
             mock_load_config.return_value = {}
-            
+
             mock_agent = MagicMock()
             mock_agent.run_task.return_value = {"success": False, "output": "Error"}
             mock_agent_class.return_value = mock_agent
-            
+
             result = cli_runner.invoke(explain, ["--project-root", str(temp_project_dir)])
-            
+
             assert result.exit_code != 0 or "failed" in result.output.lower()
 
 
@@ -104,7 +107,7 @@ class TestBuildExplanationTask:
         context = {
             "test_result": {"success": True},
             "format_result": {"success": True},
-            "type_result": {"success": True}
+            "type_result": {"success": True},
         }
         task = _build_explanation_task(context)
         assert "passed" in task.lower()
@@ -114,7 +117,7 @@ class TestBuildExplanationTask:
         context = {
             "test_result": {"success": False, "exit_code": 1, "stderr": "AssertionError"},
             "format_result": {"success": True},
-            "type_result": {"success": True}
+            "type_result": {"success": True},
         }
         task = _build_explanation_task(context)
         assert "Tests failed" in task
@@ -125,7 +128,7 @@ class TestBuildExplanationTask:
         context = {
             "test_result": {"success": True},
             "format_result": {"success": False, "stdout": "Line too long"},
-            "type_result": {"success": True}
+            "type_result": {"success": True},
         }
         task = _build_explanation_task(context)
         assert "Formatting issues" in task
@@ -135,7 +138,7 @@ class TestBuildExplanationTask:
         context = {
             "test_result": {"success": True},
             "format_result": {"success": True},
-            "type_result": {"success": False, "stdout": "Incompatible types"}
+            "type_result": {"success": False, "stdout": "Incompatible types"},
         }
         task = _build_explanation_task(context)
         assert "Type checking errors" in task
@@ -170,4 +173,3 @@ class TestExplainCommand:
         mock_llm_provider.generate.return_value = "This error occurs when..."
         explanation = mock_llm_provider.generate("Explain error")
         assert "error" in explanation.lower()
-

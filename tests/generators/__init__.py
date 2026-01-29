@@ -1,7 +1,5 @@
 """Tests for generators module initialization."""
 
-import pytest
-
 
 class TestGeneratorsInit:
     """Test the generators module exports."""
@@ -35,4 +33,3 @@ class TestGeneratorsInit:
         assert "generate_environment" in generators.__all__
         assert "read_lockfile" in generators.__all__
         assert "write_lockfile" in generators.__all__
-

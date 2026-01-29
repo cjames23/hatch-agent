@@ -1,8 +1,6 @@
 """Pytest configuration and shared fixtures for hatch-agent tests."""
 
 import os
-from pathlib import Path
-from typing import Any, Dict
 from unittest.mock import MagicMock, Mock
 
 import pytest
@@ -229,13 +227,13 @@ def mock_pypi_response():
             "license": "Apache 2.0",
             "project_urls": {
                 "Changelog": "https://github.com/psf/requests/blob/main/HISTORY.md",
-                "Documentation": "https://requests.readthedocs.io"
-            }
+                "Documentation": "https://requests.readthedocs.io",
+            },
         },
         "releases": {
             "2.28.0": [{"upload_time": "2022-06-29"}],
             "2.31.0": [{"upload_time": "2023-05-22"}],
-        }
+        },
     }
 
 
@@ -253,15 +251,15 @@ def mock_agent():
                 "agent": "ConfigSpecialist",
                 "suggestion": "Use pytest for testing",
                 "reasoning": "Well-maintained",
-                "confidence": 0.9
+                "confidence": 0.9,
             },
             {
                 "agent": "WorkflowSpecialist",
                 "suggestion": "Use unittest",
                 "reasoning": "Built-in",
-                "confidence": 0.7
-            }
-        ]
+                "confidence": 0.7,
+            },
+        ],
     }
     agent.chat.return_value = "Mocked chat response"
     agent.prepare.return_value = None
@@ -272,5 +270,5 @@ def mock_agent():
 def cli_runner():
     """Click CLI runner for testing commands."""
     from click.testing import CliRunner
-    return CliRunner()
 
+    return CliRunner()

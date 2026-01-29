@@ -1,9 +1,10 @@
 """Agent orchestration: simple, testable Agent class."""
 
-from typing import Optional, Dict, Any
-from hatch_agent.agent.prompts import default_prompt
+from typing import Any
+
 from hatch_agent.agent.llm import LLMClient
 from hatch_agent.agent.multi_agent import MultiAgentOrchestrator
+from hatch_agent.agent.prompts import default_prompt
 
 
 class Agent:
@@ -20,30 +21,29 @@ class Agent:
     def __init__(
         self,
         name: str = "hatch-agent",
-        llm_client: Optional[LLMClient] = None,
+        llm_client: LLMClient | None = None,
         use_multi_agent: bool = False,
         provider_name: str = "mock",
-        provider_config: Optional[Dict[str, Any]] = None
+        provider_config: dict[str, Any] | None = None,
     ) -> None:
         self.name = name
-        self.state: Dict[str, Any] = {}
+        self.state: dict[str, Any] = {}
         self.llm = llm_client
         self.use_multi_agent = use_multi_agent
 
         # Initialize multi-agent orchestrator if requested
         if use_multi_agent:
             self.orchestrator = MultiAgentOrchestrator(
-                provider_name=provider_name,
-                provider_config=provider_config or {}
+                provider_name=provider_name, provider_config=provider_config or {}
             )
         else:
             self.orchestrator = None
 
-    def prepare(self, context: Optional[Dict[str, Any]] = None) -> None:
+    def prepare(self, context: dict[str, Any] | None = None) -> None:
         """Prepare the agent with optional context."""
         self.state.update(context or {})
 
-    def run_task(self, task_description: str) -> Dict[str, Any]:
+    def run_task(self, task_description: str) -> dict[str, Any]:
         """Run a one-shot task described by `task_description`.
 
         Returns a result dict with keys: success (bool) and output (str).

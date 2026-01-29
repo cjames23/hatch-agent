@@ -4,16 +4,17 @@ This module uses `tomli` to robustly parse PEP 621 `pyproject.toml` files and
 extract the declared dependencies.
 """
 
-from typing import Dict, Any
+from typing import Any
+
 import tomli
 
 
-def analyze_dependencies(pyproject_path: str) -> Dict[str, Any]:
+def analyze_dependencies(pyproject_path: str) -> dict[str, Any]:
     """Parse a pyproject.toml to extract declared dependencies.
 
     Returns a dict containing the path and a list of dependencies (may be empty).
     """
-    deps: Dict[str, Any] = {"path": pyproject_path, "dependencies": []}
+    deps: dict[str, Any] = {"path": pyproject_path, "dependencies": []}
     try:
         with open(pyproject_path, "rb") as f:
             data = tomli.load(f)
@@ -35,6 +36,8 @@ def analyze_dependencies(pyproject_path: str) -> Dict[str, Any]:
     poetry_deps = poetry.get("dependencies") or {}
     if isinstance(poetry_deps, dict):
         # poetry lists dependencies as a mapping
-        deps["dependencies"].extend([f"{k}{v if v is not True else ''}" for k, v in poetry_deps.items()])
+        deps["dependencies"].extend(
+            [f"{k}{v if v is not True else ''}" for k, v in poetry_deps.items()]
+        )
 
     return deps

@@ -1,6 +1,6 @@
 """LLM prompt templates used by the agent."""
 
-from typing import Callable
+from collections.abc import Callable
 
 
 def default_prompt(task_description: str) -> str:
@@ -19,4 +19,3 @@ def system_prompt_factory(role_name: str) -> Callable[[str], str]:
         return f"System role: {role_name}\n{body}"
 
     return make_prompt
-

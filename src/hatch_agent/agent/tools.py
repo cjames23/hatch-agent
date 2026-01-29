@@ -5,8 +5,9 @@ environment (filesystem, shell, package manager). This module contains
 placeholder tool signatures to be implemented later.
 """
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Dict, Callable
+from typing import Any
 
 
 @dataclass
@@ -18,10 +19,11 @@ class Tool:
 
 # Example tool: read a file
 
-def read_file(path: str) -> Dict[str, str]:
+
+def read_file(path: str) -> dict[str, str]:
     """Read a file and return its contents; returns structured result."""
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             data = f.read()
         return {"success": True, "content": data}
     except Exception as exc:  # pragma: no cover - simple shim
@@ -29,7 +31,6 @@ def read_file(path: str) -> Dict[str, str]:
 
 
 # Tool registry (placeholder)
-TOOL_REGISTRY: Dict[str, Tool] = {
+TOOL_REGISTRY: dict[str, Tool] = {
     "read_file": Tool(name="read_file", description="Read a file from disk", func=read_file),
 }
-

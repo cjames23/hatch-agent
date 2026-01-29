@@ -1,6 +1,6 @@
 """Tests for core agent functionality."""
 
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -35,9 +35,9 @@ class TestAgentInitialization:
         """Test agent initialization in multi-agent mode."""
         mock_orchestrator = MagicMock()
         mock_orchestrator_class.return_value = mock_orchestrator
-        
+
         agent = Agent(use_multi_agent=True, provider_name="openai")
-        
+
         assert agent.use_multi_agent is True
         assert agent.orchestrator is mock_orchestrator
         mock_orchestrator_class.assert_called_once()
@@ -55,9 +55,9 @@ class TestAgentPrepare:
         """Test prepare updates state with context."""
         agent = Agent()
         context = {"project_root": "/test", "package": "requests"}
-        
+
         agent.prepare(context)
-        
+
         assert agent.state["project_root"] == "/test"
         assert agent.state["package"] == "requests"
 
@@ -72,7 +72,7 @@ class TestAgentPrepare:
         agent = Agent()
         agent.prepare({"key1": "value1"})
         agent.prepare({"key2": "value2"})
-        
+
         assert agent.state["key1"] == "value1"
         assert agent.state["key2"] == "value2"
 
@@ -86,13 +86,13 @@ class TestAgentRunTask:
         mock_orchestrator = MagicMock()
         mock_orchestrator.run.return_value = {
             "success": True,
-            "selected_suggestion": "Use requests library"
+            "selected_suggestion": "Use requests library",
         }
         mock_orchestrator_class.return_value = mock_orchestrator
-        
+
         agent = Agent(use_multi_agent=True)
         result = agent.run_task("Add HTTP client")
-        
+
         assert result["success"] is True
         mock_orchestrator.run.assert_called_once()
 
@@ -102,10 +102,10 @@ class TestAgentRunTask:
         mock_orchestrator = MagicMock()
         mock_orchestrator.run.side_effect = Exception("Orchestration failed")
         mock_orchestrator_class.return_value = mock_orchestrator
-        
+
         agent = Agent(use_multi_agent=True)
         result = agent.run_task("Some task")
-        
+
         assert result["success"] is False
         assert "Orchestration failed" in result["output"]
 
@@ -113,10 +113,10 @@ class TestAgentRunTask:
         """Test run_task with LLM client success."""
         mock_llm = MagicMock()
         mock_llm.complete.return_value = "Task completed successfully"
-        
+
         agent = Agent(llm_client=mock_llm)
         result = agent.run_task("Test task")
-        
+
         assert result["success"] is True
         assert result["output"] == "Task completed successfully"
 
@@ -124,10 +124,10 @@ class TestAgentRunTask:
         """Test run_task handles LLM exceptions."""
         mock_llm = MagicMock()
         mock_llm.complete.side_effect = Exception("LLM Error")
-        
+
         agent = Agent(llm_client=mock_llm)
         result = agent.run_task("Test task")
-        
+
         assert result["success"] is False
         assert "LLM Error" in result["output"]
 
@@ -135,7 +135,7 @@ class TestAgentRunTask:
         """Test run_task fallback when no LLM."""
         agent = Agent()
         result = agent.run_task("Execute test")
-        
+
         assert result["success"] is True
         assert "(simulated)" in result["output"]
         assert "Execute test" in result["output"]
@@ -148,10 +148,10 @@ class TestAgentChat:
         """Test chat routes to LLM client."""
         mock_llm = MagicMock()
         mock_llm.chat.return_value = "Hello from LLM!"
-        
+
         agent = Agent(llm_client=mock_llm)
         result = agent.chat("Hello")
-        
+
         assert result == "Hello from LLM!"
         mock_llm.chat.assert_called_once_with("Hello")
 
@@ -159,7 +159,7 @@ class TestAgentChat:
         """Test chat returns echo response without LLM."""
         agent = Agent(name="test-agent")
         result = agent.chat("Test message")
-        
+
         assert "test-agent" in result
         assert "Test message" in result
 
@@ -261,4 +261,3 @@ class TestAgentToolUse:
     def test_chain_tool_calls(self):
         """Test chaining multiple tool calls."""
         pass
-

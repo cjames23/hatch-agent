@@ -1,14 +1,13 @@
 """Tests for chat command."""
 
-from unittest.mock import MagicMock, Mock, patch
-from click.testing import CliRunner
-import sys
 import importlib
+from unittest.mock import MagicMock, patch
 
 import pytest
+from click.testing import CliRunner
 
 # Import the actual module (not the command) using importlib
-chat_module = importlib.import_module('hatch_agent.commands.chat')
+chat_module = importlib.import_module("hatch_agent.commands.chat")
 chat = chat_module.chat
 
 
@@ -22,84 +21,96 @@ class TestChatCLI:
 
     def test_chat_exit_immediately(self, cli_runner):
         """Test exiting chat with 'exit' command."""
-        with patch.object(chat_module, 'load_config') as mock_load_config, \
-             patch.object(chat_module, 'Agent') as mock_agent_class:
+        with (
+            patch.object(chat_module, "load_config") as mock_load_config,
+            patch.object(chat_module, "Agent") as mock_agent_class,
+        ):
             mock_load_config.return_value = {}
             mock_agent = MagicMock()
             mock_agent_class.return_value = mock_agent
-            
+
             result = cli_runner.invoke(chat, input="exit\n")
-            
+
             assert result.exit_code == 0
             assert "Goodbye" in result.output
 
     def test_chat_quit_command(self, cli_runner):
         """Test exiting chat with 'quit' command."""
-        with patch.object(chat_module, 'load_config') as mock_load_config, \
-             patch.object(chat_module, 'Agent') as mock_agent_class:
+        with (
+            patch.object(chat_module, "load_config") as mock_load_config,
+            patch.object(chat_module, "Agent") as mock_agent_class,
+        ):
             mock_load_config.return_value = {}
             mock_agent = MagicMock()
             mock_agent_class.return_value = mock_agent
-            
+
             result = cli_runner.invoke(chat, input="quit\n")
-            
+
             assert "Goodbye" in result.output
 
     def test_chat_q_command(self, cli_runner):
         """Test exiting chat with 'q' command."""
-        with patch.object(chat_module, 'load_config') as mock_load_config, \
-             patch.object(chat_module, 'Agent') as mock_agent_class:
+        with (
+            patch.object(chat_module, "load_config") as mock_load_config,
+            patch.object(chat_module, "Agent") as mock_agent_class,
+        ):
             mock_load_config.return_value = {}
             mock_agent = MagicMock()
             mock_agent_class.return_value = mock_agent
-            
+
             result = cli_runner.invoke(chat, input="q\n")
-            
+
             assert "Goodbye" in result.output
 
     def test_chat_multi_agent_mode(self, cli_runner):
         """Test chat uses multi-agent mode by default."""
-        with patch.object(chat_module, 'load_config') as mock_load_config, \
-             patch.object(chat_module, 'Agent') as mock_agent_class:
+        with (
+            patch.object(chat_module, "load_config") as mock_load_config,
+            patch.object(chat_module, "Agent") as mock_agent_class,
+        ):
             mock_load_config.return_value = {}
             mock_agent = MagicMock()
             mock_agent.run_task.return_value = {
                 "success": True,
                 "selected_suggestion": "Response",
-                "selected_agent": "Agent1"
+                "selected_agent": "Agent1",
             }
             mock_agent_class.return_value = mock_agent
-            
-            result = cli_runner.invoke(chat, input="test question\nexit\n")
-            
+
+            cli_runner.invoke(chat, input="test question\nexit\n")
+
             mock_agent_class.assert_called_once()
             call_kwargs = mock_agent_class.call_args[1]
             assert call_kwargs["use_multi_agent"] is True
 
     def test_chat_single_agent_mode(self, cli_runner):
         """Test chat with --single-agent flag."""
-        with patch.object(chat_module, 'load_config') as mock_load_config, \
-             patch.object(chat_module, 'Agent') as mock_agent_class:
+        with (
+            patch.object(chat_module, "load_config") as mock_load_config,
+            patch.object(chat_module, "Agent") as mock_agent_class,
+        ):
             mock_load_config.return_value = {}
             mock_agent = MagicMock()
             mock_agent.chat.return_value = "Response"
             mock_agent_class.return_value = mock_agent
-            
-            result = cli_runner.invoke(chat, ["--single-agent"], input="test\nexit\n")
-            
+
+            cli_runner.invoke(chat, ["--single-agent"], input="test\nexit\n")
+
             call_kwargs = mock_agent_class.call_args[1]
             assert call_kwargs["use_multi_agent"] is False
 
     def test_chat_displays_welcome(self, cli_runner):
         """Test chat displays welcome message."""
-        with patch.object(chat_module, 'load_config') as mock_load_config, \
-             patch.object(chat_module, 'Agent') as mock_agent_class:
+        with (
+            patch.object(chat_module, "load_config") as mock_load_config,
+            patch.object(chat_module, "Agent") as mock_agent_class,
+        ):
             mock_load_config.return_value = {"model": "gpt-4"}
             mock_agent = MagicMock()
             mock_agent_class.return_value = mock_agent
-            
+
             result = cli_runner.invoke(chat, input="exit\n")
-            
+
             assert "Hatch-Agent" in result.output
             assert "Interactive Chat" in result.output
 
@@ -132,8 +143,7 @@ class TestChatWithLLM:
     def test_chat_with_openai(self, mock_openai_client):
         """Test chat using OpenAI."""
         response = mock_openai_client.chat.completions.create(
-            model="gpt-4",
-            messages=[{"role": "user", "content": "Hello"}]
+            model="gpt-4", messages=[{"role": "user", "content": "Hello"}]
         )
         assert response.choices[0].message.content
 
@@ -142,7 +152,7 @@ class TestChatWithLLM:
         response = mock_anthropic_client.messages.create(
             model="claude-3-opus-20240229",
             max_tokens=1024,
-            messages=[{"role": "user", "content": "Hello"}]
+            messages=[{"role": "user", "content": "Hello"}],
         )
         assert response.content[0].text
 
@@ -150,4 +160,3 @@ class TestChatWithLLM:
         """Test chat using Google AI."""
         response = mock_google_client.generate_content("Hello")
         assert response.text
-

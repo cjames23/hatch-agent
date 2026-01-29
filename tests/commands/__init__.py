@@ -1,7 +1,5 @@
 """Tests for commands module initialization."""
 
-import pytest
-
 
 class TestCommandsInit:
     """Test the commands module."""
@@ -9,5 +7,5 @@ class TestCommandsInit:
     def test_commands_module_importable(self):
         """Test that commands module can be imported."""
         import hatch_agent.commands
-        assert hatch_agent.commands is not None
 
+        assert hatch_agent.commands is not None

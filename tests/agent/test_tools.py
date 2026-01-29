@@ -1,12 +1,8 @@
 """Tests for agent tools."""
 
-from unittest.mock import MagicMock, Mock, patch
-from pathlib import Path
+from unittest.mock import Mock, patch
 
-import pytest
-
-
-from hatch_agent.agent.tools import Tool, read_file, TOOL_REGISTRY
+from hatch_agent.agent.tools import TOOL_REGISTRY, Tool, read_file
 
 
 class TestReadFileTool:
@@ -51,17 +47,14 @@ class TestToolDataclass:
 
     def test_tool_creation(self):
         """Test creating a Tool instance."""
-        tool = Tool(
-            name="test_tool",
-            description="A test tool",
-            func=lambda x: x
-        )
+        tool = Tool(name="test_tool", description="A test tool", func=lambda x: x)
         assert tool.name == "test_tool"
         assert tool.description == "A test tool"
         assert callable(tool.func)
 
     def test_tool_func_is_callable(self):
         """Test that tool func attribute is callable."""
+
         def my_func(arg):
             return arg * 2
 
@@ -179,10 +172,7 @@ class TestGitTools:
     @patch("subprocess.run")
     def test_git_status(self, mock_run):
         """Test getting Git status."""
-        mock_run.return_value = Mock(
-            returncode=0,
-            stdout="On branch main\nnothing to commit"
-        )
+        mock_run.return_value = Mock(returncode=0, stdout="On branch main\nnothing to commit")
 
         # Would test git status tool
         result = mock_run(["git", "status"])
@@ -191,10 +181,7 @@ class TestGitTools:
     @patch("subprocess.run")
     def test_git_diff(self, mock_run):
         """Test getting Git diff."""
-        mock_run.return_value = Mock(
-            returncode=0,
-            stdout="diff --git a/file.py b/file.py"
-        )
+        mock_run.return_value = Mock(returncode=0, stdout="diff --git a/file.py b/file.py")
 
         result = mock_run(["git", "diff"])
         assert result.returncode == 0
@@ -221,14 +208,14 @@ requests~=2.28.0
 """)
 
         content = req_file.read_text()
-        lines = [line.strip() for line in content.strip().split('\n') if line.strip()]
+        lines = [line.strip() for line in content.strip().split("\n") if line.strip()]
         assert len(lines) == 3
 
     def test_parse_pyproject_toml(self, sample_pyproject_toml):
         """Test parsing pyproject.toml."""
         assert sample_pyproject_toml.exists()
         content = sample_pyproject_toml.read_text()
-        assert "name = \"test-project\"" in content
+        assert 'name = "test-project"' in content
 
     def test_get_installed_packages(self):
         """Test getting installed packages."""
@@ -249,10 +236,7 @@ class TestExecutionTools:
     @patch("subprocess.run")
     def test_run_command(self, mock_run):
         """Test running shell commands."""
-        mock_run.return_value = Mock(
-            returncode=0,
-            stdout="Command output"
-        )
+        mock_run.return_value = Mock(returncode=0, stdout="Command output")
 
         result = mock_run(["echo", "Hello"])
         assert result.returncode == 0
@@ -268,17 +252,14 @@ class TestExecutionTools:
     @patch("subprocess.run")
     def test_run_tests(self, mock_run):
         """Test running test suite."""
-        mock_run.return_value = Mock(
-            returncode=0,
-            stdout="5 passed"
-        )
+        mock_run.return_value = Mock(returncode=0, stdout="5 passed")
 
         result = mock_run(["pytest"])
         assert result.returncode == 0
 
 
-class TestToolRegistry:
-    """Test tool registration and discovery."""
+class TestToolRegistryExtended:
+    """Extended test for tool registration and discovery."""
 
     def test_register_tool(self):
         """Test registering a new tool."""
@@ -295,4 +276,3 @@ class TestToolRegistry:
     def test_tool_validation(self):
         """Test tool input validation."""
         pass
-
