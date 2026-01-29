@@ -1,9 +1,13 @@
 """Utilities for analyzing Hatch build failures and project state."""
 
+import sys
 from pathlib import Path
 from typing import Any
 
-import tomli
+if sys.version_info >= (3, 11):
+    import tomllib as tomli
+else:
+    import tomli
 from hatch.cli.application import Application
 
 

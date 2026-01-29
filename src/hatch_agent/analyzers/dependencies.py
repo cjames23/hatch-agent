@@ -1,12 +1,16 @@
 """Dependency graph and lockfile analysis utilities.
 
-This module uses `tomli` to robustly parse PEP 621 `pyproject.toml` files and
-extract the declared dependencies.
+This module uses `tomli` (or `tomllib` on Python 3.11+) to robustly parse
+PEP 621 `pyproject.toml` files and extract the declared dependencies.
 """
 
+import sys
 from typing import Any
 
-import tomli
+if sys.version_info >= (3, 11):
+    import tomllib as tomli
+else:
+    import tomli
 
 
 def analyze_dependencies(pyproject_path: str) -> dict[str, Any]:

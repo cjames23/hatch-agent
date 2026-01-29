@@ -1,10 +1,14 @@
 """Utilities for updating dependencies and analyzing API changes."""
 
 import re
+import sys
 from pathlib import Path
 from typing import Any
 
-import tomli
+if sys.version_info >= (3, 11):
+    import tomllib as tomli
+else:
+    import tomli
 import tomli_w
 from hatch.cli.application import Application
 

@@ -5,9 +5,13 @@ This analyzer inspects the file/directory layout and will parse a
 """
 
 import os
+import sys
 from typing import Any
 
-import tomli
+if sys.version_info >= (3, 11):
+    import tomllib as tomli
+else:
+    import tomli
 
 from hatch_agent.analyzers.dependencies import analyze_dependencies
 
