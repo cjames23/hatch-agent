@@ -70,9 +70,7 @@ def migrate(
         detected = detection["system"]
 
         if detected is None:
-            click.echo(
-                click.style("❌ Could not detect a build system in this project", fg="red")
-            )
+            click.echo(click.style("❌ Could not detect a build system in this project", fg="red"))
             click.echo("   Use --from to specify the source build system")
             raise click.Abort()
 
@@ -123,11 +121,13 @@ def migrate(
         provider_config=provider_cfg,
     )
 
-    agent.prepare({
-        "source_system": source_system,
-        "parsed_data": {k: v for k, v in parsed_data.items() if k != "raw_content"},
-        "base_config": base_config,
-    })
+    agent.prepare(
+        {
+            "source_system": source_system,
+            "parsed_data": {k: v for k, v in parsed_data.items() if k != "raw_content"},
+            "base_config": base_config,
+        }
+    )
 
     result = agent.run_task(task)
 
@@ -179,6 +179,7 @@ def migrate(
 
     # Serialize to TOML string for preview
     import io
+
     buf = io.BytesIO()
     tomli_w.dump(final_config, buf)
     toml_preview = buf.getvalue().decode("utf-8")
@@ -233,13 +234,14 @@ def _parse_source(migrator: ProjectMigrator, source_system: str) -> dict:
         return {"error": f"Unsupported build system: {source_system}"}
 
 
-def _build_migration_task(
-    source_system: str, parsed_data: dict, base_config: dict
-) -> str:
+def _build_migration_task(source_system: str, parsed_data: dict, base_config: dict) -> str:
     """Build the task description for AI agents."""
     # Remove raw content to keep prompt size reasonable
-    clean_data = {k: v for k, v in parsed_data.items()
-                  if k != "raw_content" and not str(v).startswith("Error")}
+    clean_data = {
+        k: v
+        for k, v in parsed_data.items()
+        if k != "raw_content" and not str(v).startswith("Error")
+    }
 
     return f"""Migrate a Python project from {source_system} to Hatch.
 

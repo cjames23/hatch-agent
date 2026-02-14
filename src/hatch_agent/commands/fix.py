@@ -1,5 +1,6 @@
 """CLI command for auto-fixing build failures using multi-agent analysis."""
 
+import contextlib
 import json
 from pathlib import Path
 
@@ -25,7 +26,8 @@ from hatch_agent.config import load_config
 )
 @click.option("--dry-run", is_flag=True, help="Show what would be fixed without making changes")
 @click.option(
-    "--no-autofix", is_flag=True,
+    "--no-autofix",
+    is_flag=True,
     help="Skip ruff autofix, use AI for everything",
 )
 @click.option(
@@ -70,9 +72,7 @@ def fix(
         if autofix_result.get("success"):
             files_fixed = autofix_result.get("files_fixed", 0)
             if files_fixed > 0:
-                click.echo(
-                    click.style(f"   ✅ Auto-fixed {files_fixed} issue(s)", fg="green")
-                )
+                click.echo(click.style(f"   ✅ Auto-fixed {files_fixed} issue(s)", fg="green"))
             else:
                 click.echo("   No auto-fixable issues found")
         else:
@@ -110,7 +110,9 @@ def fix(
     click.echo()
 
     if dry_run:
-        click.echo(click.style("🔍 DRY RUN - No AI fixes will be generated or applied", fg="yellow"))
+        click.echo(
+            click.style("🔍 DRY RUN - No AI fixes will be generated or applied", fg="yellow")
+        )
         return
 
     # Step 3: Read relevant source files for AI context
@@ -118,10 +120,8 @@ def fix(
     for err in remaining:
         file_path = project_root / err["file"]
         if file_path.exists() and str(file_path) not in error_files:
-            try:
+            with contextlib.suppress(Exception):
                 error_files[str(file_path)] = file_path.read_text(encoding="utf-8")
-            except Exception:
-                pass
 
     # Step 4: Build task and run AI
     task = _build_fix_task(remaining, error_files)
@@ -181,10 +181,14 @@ def fix(
 
     if fix_plan and fix_plan.get("fixes"):
         click.echo()
-        click.echo(click.style(f"📝 {len(fix_plan['fixes'])} structured fix(es) available", fg="green"))
+        click.echo(
+            click.style(f"📝 {len(fix_plan['fixes'])} structured fix(es) available", fg="green")
+        )
 
         for i, fx in enumerate(fix_plan["fixes"], 1):
-            click.echo(f"  {i}. {fx.get('file', '?')}:{fx.get('line', '?')} - {fx.get('description', 'N/A')}")
+            click.echo(
+                f"  {i}. {fx.get('file', '?')}:{fx.get('line', '?')} - {fx.get('description', 'N/A')}"
+            )
 
         click.echo()
         if click.confirm("Apply these fixes? (.bak backups will be created)"):
@@ -217,12 +221,18 @@ def fix(
                                 )
                         else:
                             click.echo(
-                                click.style(f"  ⚠️  Original code not found in {file_path}", fg="yellow")
+                                click.style(
+                                    f"  ⚠️  Original code not found in {file_path}", fg="yellow"
+                                )
                             )
                     except Exception as e:
                         click.echo(click.style(f"  ⚠️  Error fixing {file_path}: {e}", fg="yellow"))
                 else:
-                    click.echo(click.style(f"  ⚠️  Fix for {file_path} missing original/fixed code", fg="yellow"))
+                    click.echo(
+                        click.style(
+                            f"  ⚠️  Fix for {file_path} missing original/fixed code", fg="yellow"
+                        )
+                    )
 
             click.echo()
             if applied > 0:

@@ -36,7 +36,9 @@ class TestMigrateCLI:
                 "files": [str(temp_project_dir / "setup.py")],
             }
             mock_migrator.parse_setup_py.return_value = {
-                "name": "test", "version": "1.0", "raw_content": "...",
+                "name": "test",
+                "version": "1.0",
+                "raw_content": "...",
             }
             mock_migrator.parse_setup_cfg.return_value = {"error": "not found"}
             mock_migrator.generate_hatch_pyproject.return_value = {
@@ -76,9 +78,7 @@ class TestMigrateCLI:
             }
             mock_migrator_class.return_value = mock_migrator
 
-            result = cli_runner.invoke(
-                migrate, ["--project-root", str(temp_project_dir)]
-            )
+            result = cli_runner.invoke(migrate, ["--project-root", str(temp_project_dir)])
 
             assert result.exit_code == 0
             assert "already uses Hatch" in result.output
@@ -93,9 +93,7 @@ class TestMigrateCLI:
             }
             mock_migrator_class.return_value = mock_migrator
 
-            result = cli_runner.invoke(
-                migrate, ["--project-root", str(temp_project_dir)]
-            )
+            result = cli_runner.invoke(migrate, ["--project-root", str(temp_project_dir)])
 
             assert result.exit_code != 0 or "Could not detect" in result.output
 

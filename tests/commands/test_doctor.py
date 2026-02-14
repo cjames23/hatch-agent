@@ -28,7 +28,12 @@ class TestDoctorCLI:
             mock_doc = MagicMock()
             mock_doc.run_all_checks.return_value = {
                 "checks": [
-                    {"category": "PEP 621", "field": "name", "status": "pass", "message": "Present"},
+                    {
+                        "category": "PEP 621",
+                        "field": "name",
+                        "status": "pass",
+                        "message": "Present",
+                    },
                 ],
                 "summary": {"passed": 1, "warned": 0, "failed": 0},
             }
@@ -61,9 +66,18 @@ class TestDoctorCLI:
             mock_doc = MagicMock()
             mock_doc.run_all_checks.return_value = {
                 "checks": [
-                    {"category": "PEP 621", "field": "name", "status": "pass", "message": "Present"},
-                    {"category": "PEP 621", "field": "license", "status": "warn",
-                     "message": "Recommended: License declaration"},
+                    {
+                        "category": "PEP 621",
+                        "field": "name",
+                        "status": "pass",
+                        "message": "Present",
+                    },
+                    {
+                        "category": "PEP 621",
+                        "field": "license",
+                        "status": "warn",
+                        "message": "Recommended: License declaration",
+                    },
                 ],
                 "summary": {"passed": 1, "warned": 1, "failed": 0},
             }
@@ -91,15 +105,18 @@ class TestDoctorCLI:
             mock_doc = MagicMock()
             mock_doc.run_all_checks.return_value = {
                 "checks": [
-                    {"category": "PEP 621", "field": "name", "status": "pass", "message": "Present"},
+                    {
+                        "category": "PEP 621",
+                        "field": "name",
+                        "status": "pass",
+                        "message": "Present",
+                    },
                 ],
                 "summary": {"passed": 1, "warned": 0, "failed": 0},
             }
             mock_doctor_class.return_value = mock_doc
 
-            result = cli_runner.invoke(
-                doctor, ["--project-root", str(temp_project_dir), "--no-ai"]
-            )
+            result = cli_runner.invoke(doctor, ["--project-root", str(temp_project_dir), "--no-ai"])
 
             assert result.exit_code == 0
             assert "RECOMMENDATIONS" not in result.output

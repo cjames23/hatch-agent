@@ -1,6 +1,5 @@
 """Tests for configuration system."""
 
-import os
 from unittest.mock import patch
 
 from hatch_agent.config import (

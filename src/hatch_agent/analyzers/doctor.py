@@ -13,40 +13,221 @@ else:
 
 
 # Standard library module names (top-level) that should not be flagged as undeclared deps
-_STDLIB_TOP_LEVEL = frozenset({
-    "abc", "aifc", "argparse", "array", "ast", "asynchat", "asyncio", "asyncore",
-    "atexit", "audioop", "base64", "bdb", "binascii", "binhex", "bisect",
-    "builtins", "bz2", "calendar", "cgi", "cgitb", "chunk", "cmath", "cmd",
-    "code", "codecs", "codeop", "collections", "colorsys", "compileall",
-    "concurrent", "configparser", "contextlib", "contextvars", "copy", "copyreg",
-    "cProfile", "crypt", "csv", "ctypes", "curses", "dataclasses", "datetime",
-    "dbm", "decimal", "difflib", "dis", "distutils", "doctest", "email",
-    "encodings", "enum", "errno", "faulthandler", "fcntl", "filecmp", "fileinput",
-    "fnmatch", "formatter", "fractions", "ftplib", "functools", "gc", "getopt",
-    "getpass", "gettext", "glob", "grp", "gzip", "hashlib", "heapq", "hmac",
-    "html", "http", "idlelib", "imaplib", "imghdr", "imp", "importlib", "inspect",
-    "io", "ipaddress", "itertools", "json", "keyword", "lib2to3", "linecache",
-    "locale", "logging", "lzma", "mailbox", "mailcap", "marshal", "math",
-    "mimetypes", "mmap", "modulefinder", "multiprocessing", "netrc", "nis",
-    "nntplib", "numbers", "operator", "optparse", "os", "ossaudiodev",
-    "pathlib", "pdb", "pickle", "pickletools", "pipes", "pkgutil", "platform",
-    "plistlib", "poplib", "posix", "posixpath", "pprint", "profile", "pstats",
-    "pty", "pwd", "py_compile", "pyclbr", "pydoc", "queue", "quopri", "random",
-    "re", "readline", "reprlib", "resource", "rlcompleter", "runpy", "sched",
-    "secrets", "select", "selectors", "shelve", "shlex", "shutil", "signal",
-    "site", "smtpd", "smtplib", "sndhdr", "socket", "socketserver", "spwd",
-    "sqlite3", "sre_compile", "sre_constants", "sre_parse", "ssl", "stat",
-    "statistics", "string", "stringprep", "struct", "subprocess", "sunau",
-    "symtable", "sys", "sysconfig", "syslog", "tabnanny", "tarfile", "telnetlib",
-    "tempfile", "termios", "test", "textwrap", "threading", "time", "timeit",
-    "tkinter", "token", "tokenize", "tomllib", "trace", "traceback",
-    "tracemalloc", "tty", "turtle", "turtledemo", "types", "typing",
-    "unicodedata", "unittest", "urllib", "uu", "uuid", "venv", "warnings",
-    "wave", "weakref", "webbrowser", "winreg", "winsound", "wsgiref",
-    "xdrlib", "xml", "xmlrpc", "zipapp", "zipfile", "zipimport", "zlib",
-    # Common aliases / special names
-    "_thread", "__future__", "_io", "_collections_abc",
-})
+_STDLIB_TOP_LEVEL = frozenset(
+    {
+        "abc",
+        "aifc",
+        "argparse",
+        "array",
+        "ast",
+        "asynchat",
+        "asyncio",
+        "asyncore",
+        "atexit",
+        "audioop",
+        "base64",
+        "bdb",
+        "binascii",
+        "binhex",
+        "bisect",
+        "builtins",
+        "bz2",
+        "calendar",
+        "cgi",
+        "cgitb",
+        "chunk",
+        "cmath",
+        "cmd",
+        "code",
+        "codecs",
+        "codeop",
+        "collections",
+        "colorsys",
+        "compileall",
+        "concurrent",
+        "configparser",
+        "contextlib",
+        "contextvars",
+        "copy",
+        "copyreg",
+        "cProfile",
+        "crypt",
+        "csv",
+        "ctypes",
+        "curses",
+        "dataclasses",
+        "datetime",
+        "dbm",
+        "decimal",
+        "difflib",
+        "dis",
+        "distutils",
+        "doctest",
+        "email",
+        "encodings",
+        "enum",
+        "errno",
+        "faulthandler",
+        "fcntl",
+        "filecmp",
+        "fileinput",
+        "fnmatch",
+        "formatter",
+        "fractions",
+        "ftplib",
+        "functools",
+        "gc",
+        "getopt",
+        "getpass",
+        "gettext",
+        "glob",
+        "grp",
+        "gzip",
+        "hashlib",
+        "heapq",
+        "hmac",
+        "html",
+        "http",
+        "idlelib",
+        "imaplib",
+        "imghdr",
+        "imp",
+        "importlib",
+        "inspect",
+        "io",
+        "ipaddress",
+        "itertools",
+        "json",
+        "keyword",
+        "lib2to3",
+        "linecache",
+        "locale",
+        "logging",
+        "lzma",
+        "mailbox",
+        "mailcap",
+        "marshal",
+        "math",
+        "mimetypes",
+        "mmap",
+        "modulefinder",
+        "multiprocessing",
+        "netrc",
+        "nis",
+        "nntplib",
+        "numbers",
+        "operator",
+        "optparse",
+        "os",
+        "ossaudiodev",
+        "pathlib",
+        "pdb",
+        "pickle",
+        "pickletools",
+        "pipes",
+        "pkgutil",
+        "platform",
+        "plistlib",
+        "poplib",
+        "posix",
+        "posixpath",
+        "pprint",
+        "profile",
+        "pstats",
+        "pty",
+        "pwd",
+        "py_compile",
+        "pyclbr",
+        "pydoc",
+        "queue",
+        "quopri",
+        "random",
+        "re",
+        "readline",
+        "reprlib",
+        "resource",
+        "rlcompleter",
+        "runpy",
+        "sched",
+        "secrets",
+        "select",
+        "selectors",
+        "shelve",
+        "shlex",
+        "shutil",
+        "signal",
+        "site",
+        "smtpd",
+        "smtplib",
+        "sndhdr",
+        "socket",
+        "socketserver",
+        "spwd",
+        "sqlite3",
+        "sre_compile",
+        "sre_constants",
+        "sre_parse",
+        "ssl",
+        "stat",
+        "statistics",
+        "string",
+        "stringprep",
+        "struct",
+        "subprocess",
+        "sunau",
+        "symtable",
+        "sys",
+        "sysconfig",
+        "syslog",
+        "tabnanny",
+        "tarfile",
+        "telnetlib",
+        "tempfile",
+        "termios",
+        "test",
+        "textwrap",
+        "threading",
+        "time",
+        "timeit",
+        "tkinter",
+        "token",
+        "tokenize",
+        "tomllib",
+        "trace",
+        "traceback",
+        "tracemalloc",
+        "tty",
+        "turtle",
+        "turtledemo",
+        "types",
+        "typing",
+        "unicodedata",
+        "unittest",
+        "urllib",
+        "uu",
+        "uuid",
+        "venv",
+        "warnings",
+        "wave",
+        "weakref",
+        "webbrowser",
+        "winreg",
+        "winsound",
+        "wsgiref",
+        "xdrlib",
+        "xml",
+        "xmlrpc",
+        "zipapp",
+        "zipfile",
+        "zipimport",
+        "zlib",
+        # Common aliases / special names
+        "_thread",
+        "__future__",
+        "_io",
+        "_collections_abc",
+    }
+)
 
 # Common mapping of PyPI package names to their importable top-level module names
 _PACKAGE_IMPORT_MAP: dict[str, set[str]] = {
@@ -108,7 +289,11 @@ class ProjectDoctor:
                 results.append({"field": field, "status": "pass", "message": "Present"})
             else:
                 results.append(
-                    {"field": field, "status": "fail", "message": f"Required field '{field}' missing"}
+                    {
+                        "field": field,
+                        "status": "fail",
+                        "message": f"Required field '{field}' missing",
+                    }
                 )
 
         # Recommended fields
@@ -153,8 +338,11 @@ class ProjectDoctor:
             )
         else:
             results.append(
-                {"field": "build-system", "status": "warn",
-                 "message": f"Build backend is '{build_backend}', not hatchling"}
+                {
+                    "field": "build-system",
+                    "status": "warn",
+                    "message": f"Build backend is '{build_backend}', not hatchling",
+                }
             )
 
         hatch = config.get("tool", {}).get("hatch", {})
@@ -168,32 +356,46 @@ class ProjectDoctor:
                 full_path = self.project_root / pkg_path
                 if full_path.exists():
                     results.append(
-                        {"field": f"build.targets.wheel.packages ({pkg_path})",
-                         "status": "pass", "message": "Package directory exists"}
+                        {
+                            "field": f"build.targets.wheel.packages ({pkg_path})",
+                            "status": "pass",
+                            "message": "Package directory exists",
+                        }
                     )
                 else:
                     results.append(
-                        {"field": f"build.targets.wheel.packages ({pkg_path})",
-                         "status": "fail",
-                         "message": f"Package directory '{pkg_path}' does not exist"}
+                        {
+                            "field": f"build.targets.wheel.packages ({pkg_path})",
+                            "status": "fail",
+                            "message": f"Package directory '{pkg_path}' does not exist",
+                        }
                     )
         else:
             results.append(
-                {"field": "build.targets.wheel.packages", "status": "warn",
-                 "message": "No explicit packages configured (hatchling will auto-detect)"}
+                {
+                    "field": "build.targets.wheel.packages",
+                    "status": "warn",
+                    "message": "No explicit packages configured (hatchling will auto-detect)",
+                }
             )
 
         # Check environments
         envs = hatch.get("envs", {})
         if envs:
             results.append(
-                {"field": "envs", "status": "pass",
-                 "message": f"{len(envs)} environment(s) configured"}
+                {
+                    "field": "envs",
+                    "status": "pass",
+                    "message": f"{len(envs)} environment(s) configured",
+                }
             )
         else:
             results.append(
-                {"field": "envs", "status": "warn",
-                 "message": "No environments configured in [tool.hatch.envs]"}
+                {
+                    "field": "envs",
+                    "status": "warn",
+                    "message": "No environments configured in [tool.hatch.envs]",
+                }
             )
 
         return results
@@ -245,8 +447,11 @@ class ProjectDoctor:
             else:
                 # Might be an undeclared dependency
                 results.append(
-                    {"field": f"import '{mod}'", "status": "warn",
-                     "message": "Imported but not found in [project.dependencies]"}
+                    {
+                        "field": f"import '{mod}'",
+                        "status": "warn",
+                        "message": "Imported but not found in [project.dependencies]",
+                    }
                 )
 
         # Check for declared but unused dependencies
@@ -254,14 +459,20 @@ class ProjectDoctor:
         # Filter out common false positives (runtime-only deps, etc.)
         for pkg in sorted(unused):
             results.append(
-                {"field": f"dependency '{pkg}'", "status": "warn",
-                 "message": "Declared but not imported in source files (may be a runtime/CLI dep)"}
+                {
+                    "field": f"dependency '{pkg}'",
+                    "status": "warn",
+                    "message": "Declared but not imported in source files (may be a runtime/CLI dep)",
+                }
             )
 
         if not results:
             results.append(
-                {"field": "dependencies", "status": "pass",
-                 "message": "All declared dependencies appear to be used"}
+                {
+                    "field": "dependencies",
+                    "status": "pass",
+                    "message": "All declared dependencies appear to be used",
+                }
             )
 
         return results
@@ -292,7 +503,7 @@ class ProjectDoctor:
         # Extract Python versions from hatch matrix
         hatch = config.get("tool", {}).get("hatch", {})
         matrix_versions: set[str] = set()
-        for env_name, env_config in hatch.get("envs", {}).items():
+        for _env_name, env_config in hatch.get("envs", {}).items():
             if isinstance(env_config, dict):
                 # Check for inline matrix
                 matrix = env_config.get("matrix", [])
@@ -304,36 +515,54 @@ class ProjectDoctor:
 
         if requires_python:
             results.append(
-                {"field": "requires-python", "status": "pass",
-                 "message": f"Set to '{requires_python}'"}
+                {
+                    "field": "requires-python",
+                    "status": "pass",
+                    "message": f"Set to '{requires_python}'",
+                }
             )
         else:
             results.append(
-                {"field": "requires-python", "status": "warn",
-                 "message": "Not set -- recommended to specify supported Python versions"}
+                {
+                    "field": "requires-python",
+                    "status": "warn",
+                    "message": "Not set -- recommended to specify supported Python versions",
+                }
             )
 
         if classifier_versions and matrix_versions:
             if classifier_versions != matrix_versions:
                 results.append(
-                    {"field": "python-versions", "status": "warn",
-                     "message": f"Classifier versions {sorted(classifier_versions)} "
-                                f"differ from matrix versions {sorted(matrix_versions)}"}
+                    {
+                        "field": "python-versions",
+                        "status": "warn",
+                        "message": f"Classifier versions {sorted(classifier_versions)} "
+                        f"differ from matrix versions {sorted(matrix_versions)}",
+                    }
                 )
             else:
                 results.append(
-                    {"field": "python-versions", "status": "pass",
-                     "message": "Classifier and matrix versions are consistent"}
+                    {
+                        "field": "python-versions",
+                        "status": "pass",
+                        "message": "Classifier and matrix versions are consistent",
+                    }
                 )
         elif classifier_versions:
             results.append(
-                {"field": "python-versions", "status": "pass",
-                 "message": f"Classifiers declare Python {sorted(classifier_versions)}"}
+                {
+                    "field": "python-versions",
+                    "status": "pass",
+                    "message": f"Classifiers declare Python {sorted(classifier_versions)}",
+                }
             )
         elif matrix_versions:
             results.append(
-                {"field": "python-versions", "status": "pass",
-                 "message": f"Matrix tests Python {sorted(matrix_versions)}"}
+                {
+                    "field": "python-versions",
+                    "status": "pass",
+                    "message": f"Matrix tests Python {sorted(matrix_versions)}",
+                }
             )
 
         return results
@@ -358,13 +587,19 @@ class ProjectDoctor:
             check = self._check_entry_point_target(target)
             if check["resolvable"]:
                 results.append(
-                    {"field": f"script '{name}'", "status": "pass",
-                     "message": f"Module '{check['module']}' exists"}
+                    {
+                        "field": f"script '{name}'",
+                        "status": "pass",
+                        "message": f"Module '{check['module']}' exists",
+                    }
                 )
             else:
                 results.append(
-                    {"field": f"script '{name}'", "status": "fail",
-                     "message": f"Module '{check['module']}' not found on disk"}
+                    {
+                        "field": f"script '{name}'",
+                        "status": "fail",
+                        "message": f"Module '{check['module']}' not found on disk",
+                    }
                 )
 
         # Check [project.entry-points]
@@ -375,19 +610,28 @@ class ProjectDoctor:
                     check = self._check_entry_point_target(target)
                     if check["resolvable"]:
                         results.append(
-                            {"field": f"entry-point '{group}.{ep_name}'", "status": "pass",
-                             "message": f"Module '{check['module']}' exists"}
+                            {
+                                "field": f"entry-point '{group}.{ep_name}'",
+                                "status": "pass",
+                                "message": f"Module '{check['module']}' exists",
+                            }
                         )
                     else:
                         results.append(
-                            {"field": f"entry-point '{group}.{ep_name}'", "status": "fail",
-                             "message": f"Module '{check['module']}' not found on disk"}
+                            {
+                                "field": f"entry-point '{group}.{ep_name}'",
+                                "status": "fail",
+                                "message": f"Module '{check['module']}' not found on disk",
+                            }
                         )
 
         if not scripts and not entry_points:
             results.append(
-                {"field": "entry-points", "status": "pass",
-                 "message": "No scripts or entry-points declared (nothing to check)"}
+                {
+                    "field": "entry-points",
+                    "status": "pass",
+                    "message": "No scripts or entry-points declared (nothing to check)",
+                }
             )
 
         return results
@@ -403,8 +647,7 @@ class ProjectDoctor:
 
         if not gitignore_path.exists():
             return [
-                {"field": ".gitignore", "status": "warn",
-                 "message": "No .gitignore file found"}
+                {"field": ".gitignore", "status": "warn", "message": "No .gitignore file found"}
             ]
 
         content = gitignore_path.read_text(encoding="utf-8", errors="replace")
@@ -425,13 +668,19 @@ class ProjectDoctor:
 
         if missing:
             results.append(
-                {"field": ".gitignore", "status": "warn",
-                 "message": f"Missing recommended entries: {', '.join(missing)}"}
+                {
+                    "field": ".gitignore",
+                    "status": "warn",
+                    "message": f"Missing recommended entries: {', '.join(missing)}",
+                }
             )
         else:
             results.append(
-                {"field": ".gitignore", "status": "pass",
-                 "message": "Contains all recommended Python/Hatch entries"}
+                {
+                    "field": ".gitignore",
+                    "status": "pass",
+                    "message": "Contains all recommended Python/Hatch entries",
+                }
             )
 
         return results
@@ -514,10 +763,9 @@ class ProjectDoctor:
                         for alias in node.names:
                             top_level = alias.name.split(".")[0]
                             imports.add(top_level)
-                    elif isinstance(node, ast.ImportFrom):
-                        if node.module:
-                            top_level = node.module.split(".")[0]
-                            imports.add(top_level)
+                    elif isinstance(node, ast.ImportFrom) and node.module:
+                        top_level = node.module.split(".")[0]
+                        imports.add(top_level)
             except (SyntaxError, UnicodeDecodeError):
                 continue
 

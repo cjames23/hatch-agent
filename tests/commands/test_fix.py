@@ -64,14 +64,17 @@ class TestFixCLI:
                 "files_fixed": 0,
             }
             mock_fixer.get_remaining_errors.return_value = [
-                {"file": "src/test.py", "line": "10", "code": "E501",
-                 "message": "Line too long", "tool": "ruff"}
+                {
+                    "file": "src/test.py",
+                    "line": "10",
+                    "code": "E501",
+                    "message": "Line too long",
+                    "tool": "ruff",
+                }
             ]
             mock_fixer_class.return_value = mock_fixer
 
-            result = cli_runner.invoke(
-                fix, ["--project-root", str(temp_project_dir), "--dry-run"]
-            )
+            result = cli_runner.invoke(fix, ["--project-root", str(temp_project_dir), "--dry-run"])
 
             assert result.exit_code == 0
             assert "DRY RUN" in result.output
@@ -107,8 +110,13 @@ class TestFixCLI:
             mock_fixer = MagicMock()
             mock_fixer.run_autofix.return_value = {"success": True, "files_fixed": 0}
             mock_fixer.get_remaining_errors.return_value = [
-                {"file": "src/test.py", "line": "10", "code": "E501",
-                 "message": "Line too long", "tool": "ruff"}
+                {
+                    "file": "src/test.py",
+                    "line": "10",
+                    "code": "E501",
+                    "message": "Line too long",
+                    "tool": "ruff",
+                }
             ]
             mock_fixer_class.return_value = mock_fixer
             mock_load_config.return_value = {}
@@ -164,8 +172,13 @@ class TestBuildFixTask:
 
     def test_builds_task(self):
         errors = [
-            {"file": "src/a.py", "line": "5", "code": "E501",
-             "message": "Line too long", "tool": "ruff"}
+            {
+                "file": "src/a.py",
+                "line": "5",
+                "code": "E501",
+                "message": "Line too long",
+                "tool": "ruff",
+            }
         ]
         files = {"src/a.py": "x = 1\n"}
         task = _build_fix_task(errors, files)
@@ -196,7 +209,7 @@ class TestBuildFixer:
         from hatch_agent.analyzers.fix import BuildFixer
 
         result = BuildFixer._parse_mypy_line(
-            'src/test.py:10: error: Incompatible types [assignment]'
+            "src/test.py:10: error: Incompatible types [assignment]"
         )
         assert result is not None
         assert result["file"] == "src/test.py"

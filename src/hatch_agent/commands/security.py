@@ -25,11 +25,11 @@ from hatch_agent.config import load_config
 @click.option(
     "--show-all", is_flag=True, help="Show all agent suggestions, not just the selected one"
 )
+@click.option("--no-ai", is_flag=True, help="Show raw vulnerability data only, skip AI analysis")
 @click.option(
-    "--no-ai", is_flag=True, help="Show raw vulnerability data only, skip AI analysis"
-)
-@click.option(
-    "--fix", "apply_fix", is_flag=True,
+    "--fix",
+    "apply_fix",
+    is_flag=True,
     help="Suggest and apply version bumps for vulnerable dependencies",
 )
 def security(

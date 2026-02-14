@@ -131,7 +131,9 @@ class SecurityAuditor:
 
         for dep in deps:
             package = dep["name"]
-            version = dep.get("installed_version") or dep.get("version_spec", "").lstrip(">=<~!=")
+            version = dep.get("installed_version") or re.sub(
+                r"^[>=<~!]+", "", dep.get("version_spec", "")
+            )
 
             # Query OSV
             osv_vulns = self.query_osv(package, version if version else None)
@@ -144,16 +146,18 @@ class SecurityAuditor:
                 severity = self._extract_severity(vuln)
                 fixed_in = self._extract_fixed_version(vuln, package)
 
-                vulnerabilities.append({
-                    "package": package,
-                    "installed_version": version or "unknown",
-                    "vuln_id": vuln_id,
-                    "severity": severity,
-                    "summary": vuln.get("summary", vuln.get("details", "No description")[:200]),
-                    "fixed_in": fixed_in,
-                    "url": f"https://osv.dev/vulnerability/{vuln_id}" if vuln_id else None,
-                    "source": "osv",
-                })
+                vulnerabilities.append(
+                    {
+                        "package": package,
+                        "installed_version": version or "unknown",
+                        "vuln_id": vuln_id,
+                        "severity": severity,
+                        "summary": vuln.get("summary", vuln.get("details", "No description")[:200]),
+                        "fixed_in": fixed_in,
+                        "url": f"https://osv.dev/vulnerability/{vuln_id}" if vuln_id else None,
+                        "source": "osv",
+                    }
+                )
 
             # Query PyPI advisories
             pypi_vulns = self.query_pypi_advisory(package)
@@ -163,16 +167,18 @@ class SecurityAuditor:
                     continue
                 seen_ids.add(vuln_id)
 
-                vulnerabilities.append({
-                    "package": package,
-                    "installed_version": version or "unknown",
-                    "vuln_id": vuln_id,
-                    "severity": vuln.get("severity", "unknown").lower(),
-                    "summary": vuln.get("summary", vuln.get("details", "No description")[:200]),
-                    "fixed_in": ", ".join(vuln.get("fixed_in", [])),
-                    "url": vuln.get("link", None),
-                    "source": "pypi",
-                })
+                vulnerabilities.append(
+                    {
+                        "package": package,
+                        "installed_version": version or "unknown",
+                        "vuln_id": vuln_id,
+                        "severity": vuln.get("severity", "unknown").lower(),
+                        "summary": vuln.get("summary", vuln.get("details", "No description")[:200]),
+                        "fixed_in": ", ".join(vuln.get("fixed_in", [])),
+                        "url": vuln.get("link", None),
+                        "source": "pypi",
+                    }
+                )
 
         # Build summary
         summary = {"critical": 0, "high": 0, "medium": 0, "low": 0, "unknown": 0}
@@ -189,9 +195,7 @@ class SecurityAuditor:
             "packages_checked": len(deps),
         }
 
-    def suggest_fixes(
-        self, vulnerabilities: list[dict[str, Any]]
-    ) -> list[dict[str, str]]:
+    def suggest_fixes(self, vulnerabilities: list[dict[str, Any]]) -> list[dict[str, str]]:
         """Suggest version bumps to fix vulnerabilities.
 
         Args:
@@ -222,12 +226,14 @@ class SecurityAuditor:
                 # Use the highest fixed_in version available
                 recommended = max(info["fixed_versions"], default=None)
 
-            suggestions.append({
-                "package": pkg,
-                "current_version": info["current_version"],
-                "recommended_version": recommended or "latest",
-                "vuln_ids": ", ".join(info["vuln_ids"]),
-            })
+            suggestions.append(
+                {
+                    "package": pkg,
+                    "current_version": info["current_version"],
+                    "recommended_version": recommended or "latest",
+                    "vuln_ids": ", ".join(info["vuln_ids"]),
+                }
+            )
 
         return suggestions
 

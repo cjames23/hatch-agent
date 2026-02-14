@@ -25,9 +25,7 @@ from hatch_agent.config import load_config
 @click.option(
     "--show-all", is_flag=True, help="Show all agent suggestions, not just the selected one"
 )
-@click.option(
-    "--no-ai", is_flag=True, help="Run checks only, skip AI analysis and recommendations"
-)
+@click.option("--no-ai", is_flag=True, help="Run checks only, skip AI analysis and recommendations")
 def doctor(project_root: Path | None, config: Path | None, show_all: bool, no_ai: bool):
     """Check project health and get AI-powered recommendations.
 
@@ -150,14 +148,13 @@ def _build_doctor_task(checks: list[dict], summary: dict) -> str:
         )
 
     issues_text = "\n".join(
-        f"- [{c['status'].upper()}] {c['category']} > {c['field']}: {c['message']}"
-        for c in issues
+        f"- [{c['status'].upper()}] {c['category']} > {c['field']}: {c['message']}" for c in issues
     )
 
     return f"""Analyze the following Hatch project health check results and provide
 actionable recommendations to improve project quality:
 
-Summary: {summary['passed']} passed, {summary['warned']} warnings, {summary['failed']} failures
+Summary: {summary["passed"]} passed, {summary["warned"]} warnings, {summary["failed"]} failures
 
 Issues found:
 {issues_text}

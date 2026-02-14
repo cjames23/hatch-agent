@@ -111,16 +111,13 @@ class ProjectMigrator:
         result: dict[str, Any] = {"raw_content": content}
 
         # Try to extract common fields with regex
-        for field in ("name", "version", "description", "author", "author_email",
-                       "url", "license"):
+        for field in ("name", "version", "description", "author", "author_email", "url", "license"):
             match = re.search(rf'{field}\s*=\s*["\']([^"\']+)["\']', content)
             if match:
                 result[field] = match.group(1)
 
         # Try to extract install_requires list
-        requires_match = re.search(
-            r"install_requires\s*=\s*\[(.*?)\]", content, re.DOTALL
-        )
+        requires_match = re.search(r"install_requires\s*=\s*\[(.*?)\]", content, re.DOTALL)
         if requires_match:
             raw = requires_match.group(1)
             deps = re.findall(r'["\']([^"\']+)["\']', raw)
@@ -153,9 +150,18 @@ class ProjectMigrator:
 
         # [metadata] section
         if parser.has_section("metadata"):
-            for key in ("name", "version", "description", "long_description",
-                        "author", "author_email", "url", "license",
-                        "classifiers", "python_requires"):
+            for key in (
+                "name",
+                "version",
+                "description",
+                "long_description",
+                "author",
+                "author_email",
+                "url",
+                "license",
+                "classifiers",
+                "python_requires",
+            ):
                 if parser.has_option("metadata", key):
                     value = parser.get("metadata", key)
                     if key == "classifiers":
@@ -559,9 +565,7 @@ class ProjectMigrator:
         with open(path, "wb") as f:
             tomli_w.dump(config, f)
 
-    def get_migration_diff(
-        self, parsed_data: dict[str, Any], new_config: dict[str, Any]
-    ) -> str:
+    def get_migration_diff(self, parsed_data: dict[str, Any], new_config: dict[str, Any]) -> str:
         """Generate a human-readable summary of the migration.
 
         Args:
@@ -591,7 +595,7 @@ class ProjectMigrator:
         if project.get("requires-python"):
             lines.append(f"  Python: {project['requires-python']}")
 
-        lines.append(f"  Build backend: hatchling")
+        lines.append("  Build backend: hatchling")
 
         return "\n".join(lines)
 
