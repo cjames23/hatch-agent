@@ -256,7 +256,7 @@ class BuildFixer:
 
         Expected format: path/to/file.py:10: error: Incompatible types [assignment]
         """
-        parts = line.split(":", 3)
+        parts = line.split(":", 2)
         if len(parts) < 3:
             return None
 
@@ -268,7 +268,7 @@ class BuildFixer:
             return None
 
         # Check if it's actually an error/warning line
-        if not any(kw in rest for kw in ("error:", "warning:", "note:")):
+        if not any(rest.startswith(kw) for kw in ("error:", "warning:", "note:")):
             return None
 
         # Extract error code if present [code]

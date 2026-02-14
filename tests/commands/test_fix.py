@@ -140,21 +140,22 @@ class TestExtractFixPlan:
     """Test _extract_fix_plan helper."""
 
     def test_valid_plan(self):
-        suggestion = """Here's the fix.
-
-FIX_PLAN:
-{
-    "fixes": [
-        {
-            "file": "src/test.py",
-            "line": 10,
-            "error_code": "E501",
-            "description": "Split line",
-            "original": "long_line = 1",
-            "fixed": "long_line = (\n    1\n)"
-        }
-    ]
-}"""
+        suggestion = (
+            "Here's the fix.\n\n"
+            'FIX_PLAN:\n'
+            '{\n'
+            '    "fixes": [\n'
+            '        {\n'
+            '            "file": "src/test.py",\n'
+            '            "line": 10,\n'
+            '            "error_code": "E501",\n'
+            '            "description": "Split line",\n'
+            '            "original": "long_line = 1",\n'
+            '            "fixed": "long_line = (\\n    1\\n)"\n'
+            '        }\n'
+            '    ]\n'
+            '}'
+        )
         plan = _extract_fix_plan(suggestion)
         assert plan is not None
         assert len(plan["fixes"]) == 1
