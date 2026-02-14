@@ -55,13 +55,13 @@ def sync(
 
     Examples:
 
-      hatch-agent-sync
+      hatch-agent sync
 
-      hatch-agent-sync --env dev --dry-run
+      hatch-agent sync --env dev --dry-run
 
-      hatch-agent-sync --skip-analysis
+      hatch-agent sync --skip-analysis
 
-      hatch-agent-sync --major-only
+      hatch-agent sync --major-only
     """
     project_root = project_root or Path.cwd()
 

@@ -28,9 +28,9 @@ def multi_task(task: tuple, config: Path, show_all: bool):
 
     Examples:
 
-      hatch-agent multi-task How do I set up testing with pytest?
+      hatch-agent task How do I set up testing with pytest?
 
-      hatch-agent multi-task Configure my project for type checking
+      hatch-agent task Configure my project for type checking
     """
     # Join task words
     task_description = " ".join(task)

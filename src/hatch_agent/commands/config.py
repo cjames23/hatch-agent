@@ -25,9 +25,9 @@ def generate_config(provider: str | None, interactive: bool, path: Path | None) 
 
     Examples:
 
-      hatch-agent-generate-config --provider openai
+      hatch-agent config --provider openai
 
-      hatch-agent-generate-config --interactive
+      hatch-agent config --interactive
     """
     config_path = str(path) if path else get_config_path()
 
@@ -133,7 +133,7 @@ def generate_config(provider: str | None, interactive: bool, path: Path | None) 
         click.echo()
         click.echo("Next steps:")
         click.echo("  1. Edit the config file to add your credentials")
-        click.echo("  2. Test with: hatch-agent How do I configure testing?")
+        click.echo("  2. Test with: hatch-agent task How do I configure testing?")
     else:
         click.echo(click.style(f"❌ Failed to write config to: {config_path}", fg="red"))
         raise click.Abort()

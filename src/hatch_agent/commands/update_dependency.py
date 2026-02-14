@@ -54,11 +54,11 @@ def update_dep(
 
     Examples:
 
-      hatch-agent-update-dep requests --version latest
+      hatch-agent update-dep requests --version latest
 
-      hatch-agent-update-dep pydantic --version ">=2.0.0"
+      hatch-agent update-dep pydantic --version ">=2.0.0"
 
-      hatch-agent-update-dep django --version 5.0.0 --dry-run
+      hatch-agent update-dep django --version 5.0.0 --dry-run
     """
     click.echo(f"📦 Updating package: {click.style(package, fg='cyan')}")
 

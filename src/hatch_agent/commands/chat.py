@@ -29,9 +29,9 @@ def chat(config: Path | None, name: str, single_agent: bool) -> None:
 
     Examples:
 
-      hatch-agent-chat
+      hatch-agent chat
 
-      hatch-agent-chat --single-agent  # Faster responses
+      hatch-agent chat --single-agent  # Faster responses
     """
     # Load configuration
     cfg = load_config(str(config) if config else None)

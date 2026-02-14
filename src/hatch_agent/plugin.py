@@ -30,11 +30,15 @@ class AgentEnvironmentCollector(EnvironmentCollectorInterface):
                     "click>=8.0.0",
                 ],
                 "scripts": {
-                    "explain": "hatch-agent-explain",
-                    "add-dep": "hatch-agent-add-dep",
-                    "update-dep": "hatch-agent-update-dep",
-                    "sync": "hatch-agent-sync",
-                    "task": "hatch-agent",
+                    "explain": "hatch-agent explain",
+                    "add-dep": "hatch-agent add-dep",
+                    "update-dep": "hatch-agent update-dep",
+                    "sync": "hatch-agent sync",
+                    "task": "hatch-agent task",
+                    "doctor": "hatch-agent doctor",
+                    "fix": "hatch-agent fix",
+                    "migrate": "hatch-agent migrate",
+                    "security": "hatch-agent security",
                 },
             }
         }

@@ -211,13 +211,13 @@ Get AI-powered analysis of why your build failed, including test failures, forma
 
 ```bash
 # Analyze build failures in current directory
-hatch-agent-explain
+hatch-agent explain
 
 # Specify project directory
-hatch-agent-explain --project-root /path/to/project
+hatch-agent explain --project-root /path/to/project
 
 # Show all agent suggestions
-hatch-agent-explain --show-all
+hatch-agent explain --show-all
 ```
 
 **What it does:**
@@ -233,19 +233,19 @@ Add dependencies to your project using plain English - the AI will determine the
 
 ```bash
 # Add a dependency
-hatch-agent-add-dep add requests for http client
+hatch-agent add-dep add requests for http client
 
 # Add to dev dependencies
-hatch-agent-add-dep add pytest to dev dependencies
+hatch-agent add-dep add pytest to dev dependencies
 
 # Specify version
-hatch-agent-add-dep I need pandas version 2.0 or higher
+hatch-agent add-dep I need pandas version 2.0 or higher
 
 # Preview without making changes
-hatch-agent-add-dep add numpy --dry-run
+hatch-agent add-dep add numpy --dry-run
 
 # Skip environment sync
-hatch-agent-add-dep add flask --skip-sync
+hatch-agent add-dep add flask --skip-sync
 ```
 
 **What it does:**
@@ -261,19 +261,19 @@ Update dependencies to newer versions and automatically adapt your code to API c
 
 ```bash
 # Update to latest version
-hatch-agent-update-dep requests --version latest
+hatch-agent update-dep requests --version latest
 
 # Update to specific version
-hatch-agent-update-dep pydantic --version ">=2.0.0"
+hatch-agent update-dep pydantic --version ">=2.0.0"
 
 # Preview changes without applying
-hatch-agent-update-dep django --version 5.0.0 --dry-run
+hatch-agent update-dep django --version 5.0.0 --dry-run
 
 # Update without code changes (pyproject.toml only)
-hatch-agent-update-dep flask --version 3.0.0 --no-code-changes
+hatch-agent update-dep flask --version 3.0.0 --no-code-changes
 
 # Show all agent suggestions
-hatch-agent-update-dep pandas --version 2.1.0 --show-all
+hatch-agent update-dep pandas --version 2.1.0 --show-all
 ```
 
 **What it does:**
@@ -304,14 +304,14 @@ Ask the AI agents any question about Hatch project management.
 
 ```bash
 # Ask questions
-hatch-agent How do I set up testing with pytest?
+hatch-agent task How do I set up testing with pytest?
 
-hatch-agent Configure my project for type checking
+hatch-agent task Configure my project for type checking
 
-hatch-agent What's the best way to organize my Hatch environments?
+hatch-agent task What's the best way to organize my Hatch environments?
 
 # Show all agent suggestions
-hatch-agent Setup CI/CD for my project --show-all
+hatch-agent task Setup CI/CD for my project --show-all
 ```
 
 ## Features
@@ -363,7 +363,7 @@ Commands like `add-dep` can automatically:
 
 ```bash
 # Run this when your build fails
-hatch-agent-explain
+hatch-agent explain
 
 # Output shows:
 # ✓ Tests: FAILED
@@ -377,7 +377,7 @@ hatch-agent-explain
 
 ```bash
 # Natural language request
-hatch-agent-add-dep add black and ruff to my dev dependencies
+hatch-agent add-dep add black and ruff to my dev dependencies
 
 # AI determines:
 # - Package names: black, ruff

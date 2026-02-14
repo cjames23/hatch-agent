@@ -44,13 +44,7 @@ Source = "https://github.com/hawkinscary/hatch-agent"
 Tracker = "https://github.com/hawkinscary/hatch-agent/issues"
 
 [project.scripts]
-"hatch-agent" = "hatch_agent.commands.multi_task:multi_task"
-"hatch-agent-chat" = "hatch_agent.commands.chat:chat"
-"hatch-agent-explain" = "hatch_agent.commands.explain:explain"
-"hatch-agent-add-dep" = "hatch_agent.commands.add_dependency:add_dep"
-"hatch-agent-update-dep" = "hatch_agent.commands.update_dependency:update_dep"
-"hatch-agent-generate-config" = "hatch_agent.commands.config:generate_config"
-"hatch-agent-sync" = "hatch_agent.commands.sync:sync"
+"hatch-agent" = "hatch_agent.cli:cli"
 
 [project.entry-points.hatch]
 agent = "hatch_agent.hooks"
